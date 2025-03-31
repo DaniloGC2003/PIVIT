@@ -1,0 +1,1 @@
+o número de sensores é fixo, ou pode ser flexível?

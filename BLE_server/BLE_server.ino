@@ -44,6 +44,9 @@ bool chronometer_active = false;
 #define PIN_GREEN 6
 #define BUTTON_PIN_CHRONOMETER 0
 
+#define START_CHRONOMETER_MASTER 11
+#define START_CHRONOMETER_SLAVE 12
+
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
@@ -91,7 +94,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
     int pChar2_value_int = pChar2_value_string.toInt();
     Serial.println("pChar2: " + String(pChar2_value_int)); 
 
-    if (pChar2_value_int == 11)
+    if (pChar2_value_int == START_CHRONOMETER_MASTER)
     {
       Serial.println("start chronometer");
       //turn LED green
@@ -128,8 +131,9 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
         delay(100);//100 ms delay to prevent watchdog from triggering.
       }
     }
-    else if (pChar2_value_int == 12)
+    else if (pChar2_value_int == START_CHRONOMETER_SLAVE)
     {
+      pCharacteristic_2->setValue(pChar2_value_int);//forward data to sensor
       pCharacteristic_2->notify();
     }
   }
@@ -183,9 +187,10 @@ void setup() {
   //set notifications
   pBLE2902 = new BLE2902();
   pBLE2902->setNotifications(true);
+  pCharacteristic->addDescriptor(pBLE2902);
+
   pBLE2902_2 = new BLE2902();
   pBLE2902_2->setNotifications(true);
-  pCharacteristic->addDescriptor(pBLE2902);
   pCharacteristic_2->addDescriptor(pBLE2902_2);
   
 

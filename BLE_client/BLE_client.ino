@@ -8,6 +8,14 @@
 #include "BLEDevice.h"
 //#include "BLEScan.h"
 
+#define START_CHRONOMETER 12
+
+//GPIO pins
+#define PIN_BLUE 4
+#define PIN_RED 5
+#define PIN_GREEN 6
+#define BUTTON_PIN_CHRONOMETER 0
+
 // Define UUIDs:
 static BLEUUID serviceUUID("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
 static BLEUUID    charUUID_RESPONSE_TIME("beb5483e-36e1-4688-b7f5-ea07361b26a8");
@@ -28,7 +36,10 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
                             uint8_t* pData,
                             size_t length,
                             bool isNotify) {
-  if(pBLERemoteCharacteristic->getUUID().toString() == charUUID_RESPONSE_TIME.toString()) {
+  Serial.println("callback notify");
+
+  //if notification was sent through communication
+  if(pBLERemoteCharacteristic->getUUID().toString() == charUUID_COMM.toString()) {
 
     // convert received bytes to integer
     uint32_t counter = pData[0];
@@ -37,8 +48,15 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
     }
 
     // print to Serial
-    Serial.print("Characteristic 1 (Notify) from server: ");
+    Serial.print("Characteristic (Notify) from server: ");
     Serial.println(counter );  
+
+    if (counter == START_CHRONOMETER)
+    {
+      Serial.println("start chronometer");
+      //copy chronometer routine from server
+      
+    }
   }
 }
 
@@ -144,6 +162,19 @@ void setup() {
   pBLEScan->setActiveScan(true);
   pBLEScan->start(5, false);
   //Future improvement: make loop that scans for a BLE server instead of scanning for 5s.
+
+  //define pins for RGB LED
+  pinMode(PIN_BLUE, OUTPUT);
+  pinMode(PIN_RED, OUTPUT);
+  pinMode(PIN_GREEN, OUTPUT);
+  pinMode(BUTTON_PIN_CHRONOMETER, INPUT_PULLUP);  
+
+  //disable RGB LED
+  digitalWrite(PIN_BLUE, HIGH);
+  digitalWrite(PIN_RED, HIGH);
+  digitalWrite(PIN_GREEN, HIGH);
+
+  Serial.println("setup completed");
 } // End of setup.
 
 void loop() {
@@ -163,9 +194,9 @@ void loop() {
   // If we are connected to a peer BLE Server, update the characteristic each time we are reached
   // with the current time since boot.
   if (connected) {
-    String rxValue = pRemoteChar_comm->readValue();
-    Serial.print("Characteristic 2 (readValue): ");
-    Serial.println(rxValue.c_str());
+    //String rxValue = pRemoteChar_comm->readValue();
+    //Serial.print("Characteristic 2 (readValue): ");
+    //Serial.println(rxValue.c_str());
     
     //String txValue = "String with random value from client: " + String(-10);
     //Serial.println("Characteristic 2 (writeValue): " + txValue);
