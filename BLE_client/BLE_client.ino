@@ -31,6 +31,11 @@ static BLEAdvertisedDevice* myDevice;
 BLERemoteCharacteristic* pRemoteChar_response;
 BLERemoteCharacteristic* pRemoteChar_comm;
 
+bool chronometer_active = false;
+//variables to calculate elapsed time
+unsigned long start_time = 0;
+unsigned long end_time = 0;
+
 // Callback function for Notify function
 static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
                             uint8_t* pData,
@@ -54,8 +59,40 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
     if (counter == START_CHRONOMETER)
     {
       Serial.println("start chronometer");
-      //copy chronometer routine from server
-      
+      //turn LED green
+      digitalWrite(PIN_BLUE, HIGH);
+      digitalWrite(PIN_RED, HIGH);
+      digitalWrite(PIN_GREEN, LOW);
+
+      //start counting time
+      chronometer_active = true;
+      start_time = millis();
+
+      while (chronometer_active == true)
+      {
+        if (digitalRead(BUTTON_PIN_CHRONOMETER) == LOW)//if button was pressed while chronometer was active
+        {
+          Serial.println("BUTTON PRESSED. SUBMITTING RESPONSE TIME");
+
+          //turn off LED
+          digitalWrite(PIN_BLUE, HIGH);
+          digitalWrite(PIN_RED, HIGH);
+          digitalWrite(PIN_GREEN, HIGH);
+          end_time = millis();
+          unsigned long time_delta = end_time - start_time;
+          Serial.print("Response time: ");
+          Serial.print(time_delta);
+          Serial.println(" milliseconds.");
+          //disable chronometer
+          chronometer_active = false;
+          //Send response time to app client
+          //pCharacteristic->setValue(time_delta);
+          //pCharacteristic->notify();
+
+        }
+        delay(10);//100 ms delay to prevent watchdog from triggering.
+      }
+
     }
   }
 }
@@ -185,6 +222,16 @@ void loop() {
   if (doConnect == true) {
     if (connectToServer()) {
       Serial.println("We are now connected to the BLE Server.");
+
+      //Visual signal for user to know connection was successful
+      digitalWrite(PIN_BLUE, LOW);
+      digitalWrite(PIN_RED, LOW);
+      digitalWrite(PIN_GREEN, LOW);
+      delay(1000);
+      digitalWrite(PIN_BLUE, HIGH);
+      digitalWrite(PIN_RED, HIGH);
+      digitalWrite(PIN_GREEN, HIGH);
+
     } else {
       Serial.println("We have failed to connect to the server; there is nothin more we will do.");
     }
@@ -206,6 +253,16 @@ void loop() {
     
   }else if(doScan){
     BLEDevice::getScan()->start(5);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
+    Serial.println("Starting scanning again.");
+
+    //Visual signal for user to know device was disconnected
+    digitalWrite(PIN_BLUE, HIGH);
+    digitalWrite(PIN_RED, LOW);
+    digitalWrite(PIN_GREEN, HIGH);
+    delay(1000);
+    digitalWrite(PIN_BLUE, HIGH);
+    digitalWrite(PIN_RED, HIGH);
+    digitalWrite(PIN_GREEN, HIGH);
   }
 
   // In this example "delay" is used to delay with one second. This is of course a very basic 

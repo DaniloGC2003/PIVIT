@@ -118,7 +118,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           digitalWrite(PIN_GREEN, HIGH);
           end_time = millis();
           unsigned long time_delta = end_time - start_time;
-          Serial.print("Responde time: ");
+          Serial.print("Response time: ");
           Serial.print(time_delta);
           Serial.println(" milliseconds.");
           //disable chronometer
@@ -128,7 +128,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           pCharacteristic->notify();
 
         }
-        delay(100);//100 ms delay to prevent watchdog from triggering.
+        delay(10);//100 ms delay to prevent watchdog from triggering.
       }
     }
     else if (pChar2_value_int == START_CHRONOMETER_SLAVE)
