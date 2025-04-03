@@ -100,11 +100,12 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
 // Callback function that is called whenever a client is connected or disconnected
 class MyClientCallback : public BLEClientCallbacks {
   void onConnect(BLEClient* pclient) {
+    Serial.println("Connection to server estabilished.");
   }
 
   void onDisconnect(BLEClient* pclient) {
     connected = false;
-    Serial.println("onDisconnect");
+    Serial.println("Disconnected from server.");
   }
 };
 
@@ -120,11 +121,15 @@ bool connectToServer() {
 
   // Connect to the remove BLE Server.
   pClient->connect(myDevice);  // if you pass BLEAdvertisedDevice instead of address, it will be recognized type of peer device address (public or private)
+  if (pClient == nullptr)
+  {
+    Serial.println("NULL PCLIENT");
+  }
   Serial.println(" - Connected to server");
 
   // Obtain a reference to the service we are after in the remote BLE server.
   BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
-  
+  Serial.println("after");
   if (pRemoteService == nullptr) {
     Serial.print("Failed to find our service UUID: ");
     Serial.println(serviceUUID.toString().c_str());
@@ -149,7 +154,7 @@ bool connectToServer() {
   return true;
 }
 
-// Function to chech Characteristic
+// Function to check Characteristic
 bool connectCharacteristic(BLERemoteService* pRemoteService, BLERemoteCharacteristic* l_BLERemoteChar) {
   // Obtain a reference to the characteristic in the service of the remote BLE server.
   if (l_BLERemoteChar == nullptr) {
@@ -174,6 +179,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   
     // We have found a device, let us now see if it contains the service we are looking for.
     if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID)) {
+      //We have found our target server. We now need to connect to it. The connection will be handled by another function
       Serial.println("Found target server.");
       BLEDevice::getScan()->stop();
       myDevice = new BLEAdvertisedDevice(advertisedDevice);
@@ -181,8 +187,8 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       doScan = true;
   
     } // Found our server
-  } // onResult
-}; // MyAdvertisedDeviceCallbacks
+  }
+}; 
 
 void setup() {
   Serial.begin(115200);
@@ -198,8 +204,7 @@ void setup() {
   pBLEScan->setWindow(449);
   pBLEScan->setActiveScan(true);
   pBLEScan->start(5, false);
-  //Future improvement: make loop that scans for a BLE server instead of scanning for 5s.
-
+  
   //define pins for RGB LED
   pinMode(PIN_BLUE, OUTPUT);
   pinMode(PIN_RED, OUTPUT);
@@ -211,7 +216,14 @@ void setup() {
   digitalWrite(PIN_RED, HIGH);
   digitalWrite(PIN_GREEN, HIGH);
 
-  Serial.println("setup completed");
+  if (!doConnect)
+  {
+    //We did not manage to found the BLE target server. There is no point in going further, since the client depends on the server to work.
+    Serial.println("Target BLE server not found. Rebooting...");
+    delay(2000);
+    ESP.restart();
+  }
+  Serial.println("Setup completed successfully.");
 } // End of setup.
 
 void loop() {
@@ -238,21 +250,13 @@ void loop() {
     doConnect = false;
   }
 
-  // If we are connected to a peer BLE Server, update the characteristic each time we are reached
-  // with the current time since boot.
+  
   if (connected) {
-    //String rxValue = pRemoteChar_comm->readValue();
-    //Serial.print("Characteristic 2 (readValue): ");
-    //Serial.println(rxValue.c_str());
-    
-    //String txValue = "String with random value from client: " + String(-10);
-    //Serial.println("Characteristic 2 (writeValue): " + txValue);
-    
-    // Set the characteristic's value to be the array of bytes that is actually a string.
-    //pRemoteChar_comm->writeValue(txValue.c_str(), txValue.length());
-    
-  }else if(doScan){
-    BLEDevice::getScan()->start(5);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
+  }
+  else if(doScan)
+  {
+    //In case connection is lost, start scanning routine again.
+    BLEDevice::getScan()->start(5);
     Serial.println("Starting scanning again.");
 
     //Visual signal for user to know device was disconnected
@@ -264,8 +268,5 @@ void loop() {
     digitalWrite(PIN_RED, HIGH);
     digitalWrite(PIN_GREEN, HIGH);
   }
-
-  // In this example "delay" is used to delay with one second. This is of course a very basic 
-  // implementation to keep things simple. I recommend to use millis() for any production code
   delay(1000);
 }

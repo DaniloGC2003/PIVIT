@@ -128,7 +128,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           pCharacteristic->notify();
 
         }
-        delay(10);//100 ms delay to prevent watchdog from triggering.
+        delay(10);//10 ms delay to prevent watchdog from triggering.
       }
     }
     else if (pChar2_value_int == START_CHRONOMETER_SLAVE)
