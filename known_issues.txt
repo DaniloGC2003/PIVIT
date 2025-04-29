@@ -1,3 +1,0 @@
- - After resetting client which was connected to server, reconnection is not possible. Code gets stuck on the connectToServer() function.
-
-Only after resetting the client once more is it possible to reestabilish a connection.

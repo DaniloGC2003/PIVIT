@@ -32,13 +32,13 @@ uint32_t value = 0;
 //variables to calculate elapsed time
 unsigned long start_time = 0;
 unsigned long end_time = 0;
-
 bool chronometer_active = false;
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // payload for ESP-NOW messages
 struct_message payload_ESPNOW;
+
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -47,14 +47,6 @@ struct_message payload_ESPNOW;
 #define CHAR1_UUID          "beb5483e-36e1-4688-b7f5-ea07361b26a8"//Characteristic to send response time
 #define CHAR2_UUID          "2f6d0e14-ea50-4891-99d8-4bfbb72c1625"//Characteristic to communicate with clients (app and ESPs)
 
-//GPIO pins
-#define PIN_BLUE 4
-#define PIN_RED 5
-#define PIN_GREEN 6
-#define BUTTON_PIN_CHRONOMETER 0
-
-#define START_CHRONOMETER_MASTER 11
-#define START_CHRONOMETER_SLAVE 12
 
 //BLE server callback functions
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -143,8 +135,17 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
     }
     else if (pChar2_value_int == START_CHRONOMETER_SLAVE)
     {
-      pCharacteristic_2->setValue(pChar2_value_int);//forward data to sensor
-      pCharacteristic_2->notify();
+      esp_err_t result = ESP_FAIL;
+      payload_ESPNOW.code = START_CHRONOMETER_SLAVE;
+      
+      result = esp_now_send(broadcastAddress, 
+                            (uint8_t*) &payload_ESPNOW,
+                            sizeof(payload_ESPNOW)); 
+      if (result == ESP_OK) {
+        Serial.println("Sent");
+      } else {
+        Serial.println("Error on sending");
+  }
     }
   }
 };
@@ -152,12 +153,12 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
 void setup() {
 
   Serial.begin(115200);
-  Serial.println("device boot");
+  Serial.println("Device boot");
 
   /* BLE setup */
 
   // Create the BLE Device
-  BLEDevice::init("ESP32");
+  BLEDevice::init("ESP32master");
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -211,7 +212,7 @@ void setup() {
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
-  Serial.println("Waiting a client connection to notify...");
+  Serial.println("Waiting for a client connection to notify...");
 
 
   /* ESP-NOW setup */
@@ -231,13 +232,16 @@ void setup() {
   peerInfo.encrypt = false;
   esp_now_add_peer(&peerInfo);
 
+  payload_ESPNOW.direction = 'd';
+  payload_ESPNOW.code = 0;
+  strcpy(payload_ESPNOW.string, "");
+
   /* GPIO setup */
 
   pinMode(PIN_BLUE, OUTPUT);
   pinMode(PIN_RED, OUTPUT);
   pinMode(PIN_GREEN, OUTPUT);
   pinMode(BUTTON_PIN_CHRONOMETER, INPUT_PULLUP);  
-
 
   //disable RGB LED
   digitalWrite(PIN_BLUE, HIGH);
@@ -248,16 +252,6 @@ void setup() {
 }
 
 void loop() {
-  esp_err_t result = ESP_FAIL;
-  strcpy(payload_ESPNOW.string, "SIUUUU");
-  
-  result = esp_now_send(broadcastAddress, 
-                         (uint8_t*) &payload_ESPNOW,
-                         sizeof(payload_ESPNOW)); 
-  if (result == ESP_OK) {
-    Serial.println("Sent");
-  } else {
-    Serial.println("Error on sending");
-  }
+
   delay(1000); // Espera 1 segundos
 }

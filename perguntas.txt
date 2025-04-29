@@ -1,5 +1,3 @@
-o número de sensores é fixo, ou pode ser flexível?
 
-Comunicação via rádio ou BLE?
 
-~omo saber qual sensor é o 1, 2 ou 3? Usar seleção por resistores?
+como saber qual sensor é o 1, 2 ou 3? Usar seleção por resistores?
