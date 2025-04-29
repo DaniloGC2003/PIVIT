@@ -13,6 +13,9 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
+
+//BLE characteristic 1: sends response time
+//BLE characteristic 2: sends and receives signals
 BLEServer* pServer = NULL;
 BLECharacteristic* pCharacteristic = NULL;
 BLECharacteristic* pCharacteristic_2 = NULL;
@@ -37,6 +40,12 @@ int seg = 0; // Variável global (não é reinicializada)
 int indentificador = 5;
 int timetoStart = 100;
 
+// payload for ESP-NOW messages
+typedef struct struct_message {
+  char string[32];
+} struct_message;
+struct_message payload_ESPNOW;
+
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
@@ -53,6 +62,7 @@ int timetoStart = 100;
 #define START_CHRONOMETER_MASTER 11
 #define START_CHRONOMETER_SLAVE 12
 
+//BLE server callback functions
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
@@ -76,7 +86,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
-      Serial.println("on disconnect");
+      Serial.println("BLE device disconnected.");
       delay(500); // give the bluetooth stack the chance to get things ready
       pServer->startAdvertising(); // restart advertising
       Serial.println("Device disconnected. Start advertising");
@@ -93,7 +103,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
     }
 };
 
-//callback function for characteristic 2
+//callback function for BLE characteristic 2
 class CharacteristicCallBack: public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pChar) override { 
     String pChar2_value_string = pChar->getValue();                // This part is updated slightly from the video
@@ -215,7 +225,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
   
   if (esp_now_init() != ESP_OK) {
-    Serial.println("Falha ao iniciar ESP-NOW");
+    Serial.println("Error initializing ESP-NOW");
     return;
   }
 
@@ -244,40 +254,17 @@ void setup() {
 }
 
 void loop() {
-    if (deviceConnected) {
-        delay(1000);
-    }
-    // connecting
-    if (deviceConnected && !oldDeviceConnected) {
-        // do stuff here on connecting
-        Serial.println("Device connected");
-
-        pServer->startAdvertising();//get ready for other clients to connect
-        oldDeviceConnected = deviceConnected;
-
-        //Visual signal for user to know connection was successful
-        digitalWrite(PIN_BLUE, LOW);
-        digitalWrite(PIN_RED, LOW);
-        digitalWrite(PIN_GREEN, LOW);
-        delay(1000);
-        digitalWrite(PIN_BLUE, HIGH);
-        digitalWrite(PIN_RED, HIGH);
-        digitalWrite(PIN_GREEN, HIGH);
-    }
-  seg++;
   esp_err_t result = ESP_FAIL;
-  String mensagem = String(timetoStart);
-  if(timetoStart > 0)
-     result = esp_now_send(broadcastAddress, 
-                         (uint8_t*)mensagem.c_str(),  // <-- Use .c_str() aqui
-                         mensagem.length() + 1); 
-    
+  strcpy(payload_ESPNOW.string, "SIUUUU");
+  
+  result = esp_now_send(broadcastAddress, 
+                         (uint8_t*) &payload_ESPNOW,
+                         sizeof(payloadESPNOW)); 
   if (result == ESP_OK) {
     Serial.print("Enviado: ");
     Serial.println(timetoStart);
   } else {
     Serial.println("Erro no envio");
   }
-  timetoStart--;
   delay(1000); // Espera 1 segundos
 }
