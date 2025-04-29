@@ -12,7 +12,7 @@
 #include <BLE2902.h>
 #include <esp_now.h>
 #include <WiFi.h>
-
+#include "../utils/utils.h"
 
 //BLE characteristic 1: sends response time
 //BLE characteristic 2: sends and receives signals
@@ -36,14 +36,8 @@ unsigned long end_time = 0;
 bool chronometer_active = false;
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-int seg = 0; // Variável global (não é reinicializada)
-int indentificador = 5;
-int timetoStart = 100;
 
 // payload for ESP-NOW messages
-typedef struct struct_message {
-  char string[32];
-} struct_message;
 struct_message payload_ESPNOW;
 
 // See the following for generating UUIDs:
@@ -259,12 +253,11 @@ void loop() {
   
   result = esp_now_send(broadcastAddress, 
                          (uint8_t*) &payload_ESPNOW,
-                         sizeof(payloadESPNOW)); 
+                         sizeof(payload_ESPNOW)); 
   if (result == ESP_OK) {
-    Serial.print("Enviado: ");
-    Serial.println(timetoStart);
+    Serial.println("Sent");
   } else {
-    Serial.println("Erro no envio");
+    Serial.println("Error on sending");
   }
   delay(1000); // Espera 1 segundos
 }

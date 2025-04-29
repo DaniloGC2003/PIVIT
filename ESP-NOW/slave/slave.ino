@@ -10,24 +10,24 @@
 // Include Libraries
 #include <esp_now.h>
 #include <WiFi.h>
+#include "../utils/utils.h"
+
 
 // Define a data structure
-typedef struct struct_message {
-  char a[32];
-} struct_message;
+
 
 // Create a structured object
-struct_message myData;
+struct_message payload_ESPNOW;
 
 
 // Callback function executed when data is received
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&myData, incomingData, sizeof(myData));
+void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, int len) {
+  memcpy(&payload_ESPNOW, incomingData, sizeof(payload_ESPNOW));
   Serial.print("Data received: ");
   Serial.println(len);
-  Serial.print("String Value: ");
-  Serial.println(myData.a);
-  Serial.println();
+  Serial.print("Character Value: ");
+  Serial.println(payload_ESPNOW.string);
+
 }
 
 void setup() {
