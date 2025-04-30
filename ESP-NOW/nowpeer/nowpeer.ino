@@ -2,7 +2,7 @@
 #include <WiFi.h>
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-int seg = 0; // Variável global, fuck it
+int seg = 0; // 
 int indentificador = 1;
 int time_to_start = INT_MAX;
 String message = "i";
