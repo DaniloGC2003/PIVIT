@@ -145,10 +145,20 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
         Serial.println("Sent");
       } else {
         Serial.println("Error on sending");
-  }
+      }
     }
   }
 };
+
+/*// ESP-NOW calçback function
+void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, int len) {
+  memcpy(&payload_ESPNOW, incomingData, sizeof(payload_ESPNOW));
+  Serial.print("String Value: ");
+  Serial.println(payload_ESPNOW.string);
+  Serial.print("Direction: ");
+  Serial.println(payload_ESPNOW.direction);
+
+}*/
 
 void setup() {
 
@@ -235,6 +245,10 @@ void setup() {
   payload_ESPNOW.direction = 'd';
   payload_ESPNOW.code = 0;
   strcpy(payload_ESPNOW.string, "");
+
+  // Register callback function
+  //esp_now_register_recv_cb(OnDataRecv);
+
 
   /* GPIO setup */
 

@@ -66,7 +66,18 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
           Serial.println(" milliseconds.");
           //disable chronometer
           chronometer_active = false;
+
           //Send response time to master device
+          esp_err_t result = ESP_FAIL;
+          payload_ESPNOW.code = UPLINK_REACTION_TIME;
+          result = esp_now_send(broadcastAddress, 
+                                (uint8_t*) &payload_ESPNOW,
+                                sizeof(payload_ESPNOW)); 
+          if (result == ESP_OK) {
+            Serial.println("Sent");
+          } else {
+            Serial.println("Error on sending");
+          }
           
 
         }
@@ -87,12 +98,20 @@ void setup() {
     Serial.println("Error initializing ESP-NOW");
     return;
   }
+
+  // Configura o peer (opcional para broadcast)
+  esp_now_peer_info_t peerInfo;
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+  esp_now_add_peer(&peerInfo);
   
   // Register callback function
   esp_now_register_recv_cb(OnDataRecv);
 
   payload_ESPNOW.direction = 'u';
-  strcpy(payload_ESPNOW.string, "");
+  strcpy(payload_ESPNOW.string, "from slave");
   payload_ESPNOW.code = 0;
 
 
