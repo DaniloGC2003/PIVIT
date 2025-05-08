@@ -1,6 +1,14 @@
 # PIVIT
 Este repositório faz parte de um PIVIT, ofertado pela Universidade Tecnológica Federal do Paraná.
 
+## Requisitos
+A fim de poder rodar os programas aqui desenvolvidos, será necessário:
+- Instalar a IDE do Arduino;
+- Instalar dependências das placas da Espressif. Na IDE, acessar File -> Preferences. Em seguida, colar a seguinte URL em "Additional boards manager URLs":
+> https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+Após esse processo, as dependências necessárias para a ESP-32 usada no projeto (incluindo a biblioteca de BLE) serão instaladas.
+
 ## Pasta BLE
 Diretório legado. Possui códigos desenvolvidos quando se pensava em implementar bluetooth low energy (BLE) como único protocolo de comunicação da solução.
 
