@@ -27,4 +27,6 @@ typedef struct struct_message
 #define START_CHRONOMETER_SLAVE 12
 #define UPLINK_REACTION_TIME 13
 
+// void print_ESPNOW_payload(struct_message payload);
+
 #endif

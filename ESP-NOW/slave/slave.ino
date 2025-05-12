@@ -25,19 +25,27 @@ struct_message payload_ESPNOW;
 
 
 
-
+void print_ESPNOW_payload(struct_message payload)
+{
+  Serial.println("payload's contents:");
+  Serial.print("direction: ");
+  Serial.println(payload.direction);
+  Serial.print("code: ");
+  Serial.println(payload.code);
+  Serial.print("string: ");
+  Serial.println(payload.string);
+}
 
 // Callback function executed when data is received
 void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, int len) {
-  memcpy(&payload_ESPNOW, incomingData, sizeof(payload_ESPNOW));
-  Serial.print("String Value: ");
-  Serial.println(payload_ESPNOW.string);
-  Serial.print("Direction: ");
-  Serial.println(payload_ESPNOW.direction);
+  struct_message received_payload;
+  memcpy(&received_payload, incomingData, sizeof(received_payload));
+  Serial.println("Data received:")
+  print_ESPNOW_payload(received_payload);
 
-  if (payload_ESPNOW.direction == DOWNLINK)
+  if (received_payload.direction == DOWNLINK)
   {
-    if (payload_ESPNOW.code == START_CHRONOMETER_SLAVE)
+    if (received_payload.code == START_CHRONOMETER_SLAVE)
       Serial.println("start chronometer");
 
       //turn LED green
@@ -64,12 +72,16 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
           Serial.print("Response time: ");
           Serial.print(time_delta);
           Serial.println(" milliseconds.");
+          char time_delta_str[10];
+          sprintf(time_delta_str, "%d", time_delta); //convert number to string
           //disable chronometer
           chronometer_active = false;
 
           //Send response time to master device
           esp_err_t result = ESP_FAIL;
           payload_ESPNOW.code = UPLINK_REACTION_TIME;
+          strcpy(payload_ESPNOW.string, time_delta_str);
+          print_ESPNOW_payload(payload_ESPNOW);
           result = esp_now_send(broadcastAddress, 
                                 (uint8_t*) &payload_ESPNOW,
                                 sizeof(payload_ESPNOW)); 

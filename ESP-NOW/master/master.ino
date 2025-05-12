@@ -48,6 +48,17 @@ struct_message payload_ESPNOW;
 #define CHAR2_UUID          "2f6d0e14-ea50-4891-99d8-4bfbb72c1625"//Characteristic to communicate with clients (app and ESPs)
 
 
+void print_ESPNOW_payload(struct_message payload)
+{
+  Serial.println("payload's contents:");
+  Serial.print("direction: ");
+  Serial.println(payload.direction);
+  Serial.print("code: ");
+  Serial.println(payload.code);
+  Serial.print("string: ");
+  Serial.println(payload.string);
+}
+
 //BLE server callback functions
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -137,6 +148,8 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
     {
       esp_err_t result = ESP_FAIL;
       payload_ESPNOW.code = START_CHRONOMETER_SLAVE;
+      payload_ESPNOW.direction = 'd';
+      strcpy(payload_ESPNOW.string, "");
       
       result = esp_now_send(broadcastAddress, 
                             (uint8_t*) &payload_ESPNOW,
@@ -150,15 +163,13 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
   }
 };
 
-/*// ESP-NOW calçback function
+// ESP-NOW callback function
 void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, int len) {
-  memcpy(&payload_ESPNOW, incomingData, sizeof(payload_ESPNOW));
-  Serial.print("String Value: ");
-  Serial.println(payload_ESPNOW.string);
-  Serial.print("Direction: ");
-  Serial.println(payload_ESPNOW.direction);
-
-}*/
+  struct_message received_payload;
+  memcpy(&received_payload, incomingData, sizeof(received_payload));
+  Serial.println("received data from slave: ");
+  print_ESPNOW_payload(received_payload);
+}
 
 void setup() {
 
@@ -247,7 +258,7 @@ void setup() {
   strcpy(payload_ESPNOW.string, "");
 
   // Register callback function
-  //esp_now_register_recv_cb(OnDataRecv);
+  esp_now_register_recv_cb(OnDataRecv);
 
 
   /* GPIO setup */
