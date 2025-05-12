@@ -1,1 +1,1 @@
-- Criar função de callback para recebimento de mensagem ESP-NOW no master;
+- Determinar na interface BLE como o mestre enviará as informações de tempo dos slaves (é necessário enviar 2 dados: tempo de reação e identificador do slave)
