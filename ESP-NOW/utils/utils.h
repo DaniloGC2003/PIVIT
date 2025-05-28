@@ -6,9 +6,13 @@ typedef struct struct_message
 {
   // Direction: downlink: "d"; uplink: "u".
   char direction;
+  // code: type of information to be sent or received.
   int code;
-  char string[32];
+  int sender_id;
+  unsigned long reaction_time;
 } struct_message;
+
+#define MASTER_ID 0
 
 // Characters for identifying payload direction
 #define UPLINK 'u'
@@ -21,6 +25,11 @@ typedef struct struct_message
 
 // GPIO pin for push button
 #define BUTTON_PIN_CHRONOMETER 0
+
+//GPIO pins for identification
+#define PIN_ID_2 7
+#define PIN_ID_1 15
+#define PIN_ID_0 16
 
 // codes for BLE and ESP-NOW
 #define START_CHRONOMETER_MASTER 11

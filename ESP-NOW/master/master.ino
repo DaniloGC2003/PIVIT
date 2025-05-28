@@ -34,6 +34,12 @@ unsigned long start_time = 0;
 unsigned long end_time = 0;
 bool chronometer_active = false;
 
+//array used to send data to the app
+uint8_t byte_arr[5];
+
+//master's ID
+uint8_t master_id = MASTER_ID;
+
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // payload for ESP-NOW messages
@@ -44,7 +50,7 @@ struct_message payload_ESPNOW;
 // https://www.uuidgenerator.net/
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHAR1_UUID          "beb5483e-36e1-4688-b7f5-ea07361b26a8"//Characteristic to send response time
+#define CHAR1_UUID          "beb5483e-36e1-4688-b7f5-ea07361b26a8"//Characteristic to send response time and device's ID
 #define CHAR2_UUID          "2f6d0e14-ea50-4891-99d8-4bfbb72c1625"//Characteristic to communicate with clients (app and ESPs)
 
 
@@ -55,8 +61,10 @@ void print_ESPNOW_payload(struct_message payload)
   Serial.println(payload.direction);
   Serial.print("code: ");
   Serial.println(payload.code);
-  Serial.print("string: ");
-  Serial.println(payload.string);
+  Serial.print("sender's ID: ");
+  Serial.println(payload.sender_id);
+  Serial.print("Reaction time: ");
+  Serial.println(payload.reaction_time);
 }
 
 //BLE server callback functions
@@ -136,8 +144,14 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           Serial.println(" milliseconds.");
           //disable chronometer
           chronometer_active = false;
+          byte_arr[0] = master_id;
+          byte_arr[1] = (uint8_t)(time_delta & 0xFF);
+          byte_arr[2] = (uint8_t)((time_delta >> 8) & 0xFF);
+          byte_arr[3] = (uint8_t)((time_delta >> 16) & 0xFF);
+          byte_arr[4] = (uint8_t)((time_delta >> 24) & 0xFF);
+          
           //Send response time to app client
-          pCharacteristic->setValue(time_delta);
+          pCharacteristic->setValue(byte_arr, sizeof(byte_arr));
           pCharacteristic->notify();
 
         }
@@ -148,8 +162,8 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
     {
       esp_err_t result = ESP_FAIL;
       payload_ESPNOW.code = START_CHRONOMETER_SLAVE;
-      payload_ESPNOW.direction = 'd';
-      strcpy(payload_ESPNOW.string, "");
+      payload_ESPNOW.direction = DOWNLINK;
+      payload_ESPNOW.reaction_time = 0.0;
       
       result = esp_now_send(broadcastAddress, 
                             (uint8_t*) &payload_ESPNOW,
@@ -253,9 +267,11 @@ void setup() {
   peerInfo.encrypt = false;
   esp_now_add_peer(&peerInfo);
 
-  payload_ESPNOW.direction = 'd';
+  payload_ESPNOW.direction = DOWNLINK;
   payload_ESPNOW.code = 0;
-  strcpy(payload_ESPNOW.string, "");
+  payload_ESPNOW.sender_id = MASTER_ID;
+  payload_ESPNOW.reaction_time = 0.0;
+
 
   // Register callback function
   esp_now_register_recv_cb(OnDataRecv);
