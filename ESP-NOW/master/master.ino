@@ -144,6 +144,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           Serial.println(" milliseconds.");
           //disable chronometer
           chronometer_active = false;
+          //create payload
           byte_arr[0] = master_id;
           byte_arr[1] = (uint8_t)(time_delta & 0xFF);
           byte_arr[2] = (uint8_t)((time_delta >> 8) & 0xFF);
@@ -179,10 +180,21 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
 
 // ESP-NOW callback function
 void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, int len) {
+  Serial.println("oissss");
   struct_message received_payload;
   memcpy(&received_payload, incomingData, sizeof(received_payload));
   Serial.println("received data from slave: ");
   print_ESPNOW_payload(received_payload);
+
+  byte_arr[0] = (uint8_t)(received_payload.sender_id & 0xFF);
+  byte_arr[1] = (uint8_t)(received_payload.reaction_time & 0xFF);
+  byte_arr[2] = (uint8_t)((received_payload.reaction_time >> 8) & 0xFF);
+  byte_arr[3] = (uint8_t)((received_payload.reaction_time >> 16) & 0xFF);
+  byte_arr[4] = (uint8_t)((received_payload.reaction_time >> 24) & 0xFF);
+  
+  //Send response time to app client
+  pCharacteristic->setValue(byte_arr, sizeof(byte_arr));
+  pCharacteristic->notify();
 }
 
 void setup() {
@@ -293,6 +305,7 @@ void setup() {
 }
 
 void loop() {
+
 
   delay(1000); // Espera 1 segundos
 }

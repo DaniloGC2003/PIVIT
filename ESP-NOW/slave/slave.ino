@@ -162,5 +162,18 @@ void setup() {
 }
  
 void loop() {
+    /*esp_err_t result = ESP_FAIL;
+    payload_ESPNOW.code = UPLINK_REACTION_TIME;
+    payload_ESPNOW.reaction_time = 5.0;
+    print_ESPNOW_payload(payload_ESPNOW);
+    result = esp_now_send(broadcastAddress, 
+                          (uint8_t*) &payload_ESPNOW,
+                          sizeof(payload_ESPNOW)); 
+    if (result == ESP_OK) {
+      Serial.println("Sent");
+    } else {
+      Serial.println("Error on sending");
+    }*/
 
+    delay(3000);
 }
