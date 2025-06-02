@@ -26,7 +26,7 @@ typedef struct struct_message
 // GPIO pin for push button
 #define BUTTON_PIN_CHRONOMETER 0
 
-//GPIO pins for identification
+// GPIO pins for identification
 #define PIN_ID_2 7
 #define PIN_ID_1 15
 #define PIN_ID_0 16
@@ -34,7 +34,7 @@ typedef struct struct_message
 // codes for BLE and ESP-NOW
 #define START_CHRONOMETER_MASTER 11
 #define START_CHRONOMETER_SLAVE 12
-#define UPLINK_REACTION_TIME 13
+#define UPLINK_REACTION_TIME 13 // maybe change to 10?
 
 // void print_ESPNOW_payload(struct_message payload);
 
