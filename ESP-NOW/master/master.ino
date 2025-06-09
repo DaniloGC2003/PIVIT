@@ -75,7 +75,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
       // do stuff here on connecting
       Serial.println("Device connected");
 
-      pServer->startAdvertising();//get ready for other clients to connect
+      pServer->stopAdvertising();//get ready for other clients to connect
       oldDeviceConnected = deviceConnected;
 
 
