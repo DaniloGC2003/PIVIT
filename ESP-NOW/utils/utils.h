@@ -31,11 +31,13 @@ typedef struct struct_message
 #define PIN_ID_1 15
 #define PIN_ID_0 16
 
-// codes for BLE and ESP-NOW
+// codes for BLE, ESP-NOW and UART
 #define START_CHRONOMETER_MASTER 11
 #define START_CHRONOMETER_SLAVE 12
 #define UPLINK_REACTION_TIME 13 // maybe change to 10?
 
-// void print_ESPNOW_payload(struct_message payload);
+// serial data header
+#define SERIAL_HEADER "ESP"
+#define SERIAL_TRAILER "END"
 
 #endif
