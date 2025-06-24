@@ -14,9 +14,6 @@
 #include <WiFi.h>
 #include "../utils/utils.h"
 
-#define RXD2 16
-#define TXD2 17
-
 //BLE characteristic 1: sends response time
 //BLE characteristic 2: sends and receives signals
 BLEServer* pServer = NULL;
@@ -144,7 +141,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
     }
     else if (pChar2_value_int == START_CHRONOMETER_SLAVE)
     {
-      String msg = SERIAL_HEADER + String(pChar2_value_int) + SERIAL_TRAILER;
+      String msg = SERIAL_HEADER + String(pChar2_value_int);// + SERIAL_TRAILER;
       Serial2.println(msg);
       Serial.println("Sent: " + msg);
     }

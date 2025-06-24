@@ -31,6 +31,10 @@ typedef struct struct_message
 #define PIN_ID_1 15
 #define PIN_ID_0 16
 
+//GPIO pins for seiral communication
+#define RXD2 16
+#define TXD2 17
+
 // codes for BLE, ESP-NOW and UART
 #define START_CHRONOMETER_MASTER 11
 #define START_CHRONOMETER_SLAVE 12
