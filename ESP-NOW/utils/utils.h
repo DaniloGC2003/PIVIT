@@ -40,8 +40,11 @@ typedef struct struct_message
 #define START_CHRONOMETER_SLAVE 12
 #define UPLINK_REACTION_TIME 13 // maybe change to 10?
 
-// serial data header
+// serial data headers
 #define SERIAL_HEADER "ESP"
+#define HEADER_LEN 3
 #define SERIAL_TRAILER "END"
+#define SERIAL_START_CHRONOMETER "SSC"
+#define SERIAL
 
 #endif

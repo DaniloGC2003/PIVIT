@@ -40,12 +40,41 @@ uint8_t byte_arr[5];
 //master's ID
 uint8_t master_id = MASTER_ID;
 
+// payload for ESP-NOW messages
+struct_message payload_ESPNOW;
+
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHAR1_UUID          "beb5483e-36e1-4688-b7f5-ea07361b26a8"//Characteristic to send response time and device's ID
 #define CHAR2_UUID          "2f6d0e14-ea50-4891-99d8-4bfbb72c1625"//Characteristic to communicate with clients (app and ESPs)
+
+void sendMessage(struct_message *msg) {
+  uint8_t buffer[HEADER_LEN + sizeof(struct_message)];
+
+  // Copy header
+  memcpy(buffer, SERIAL_HEADER, HEADER_LEN);
+
+  // Copy struct right after the header
+  memcpy(buffer + HEADER_LEN, msg, sizeof(struct_message));
+
+  // Send entire buffer at once
+  Serial2.write(buffer, sizeof(buffer));
+}
+
+void print_ESPNOW_payload(struct_message payload)
+{
+  Serial.println("payload's contents:");
+  Serial.print("direction: ");
+  Serial.println(payload.direction);
+  Serial.print("code: ");
+  Serial.println(payload.code);
+  Serial.print("sender's ID: ");
+  Serial.println(payload.sender_id);
+  Serial.print("Reaction time: ");
+  Serial.println(payload.reaction_time);
+}
 
 //BLE server callback functions
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -130,6 +159,11 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           byte_arr[2] = (uint8_t)((time_delta >> 8) & 0xFF);
           byte_arr[3] = (uint8_t)((time_delta >> 16) & 0xFF);
           byte_arr[4] = (uint8_t)((time_delta >> 24) & 0xFF);
+
+          Serial.println("bytes to be sent to app: ");
+          for (int i = 0; i < 5; i++) {
+            Serial.println(byte_arr[i], DEC);  // Print each byte as decimal
+          }
           
           //Send response time to app client
           pCharacteristic->setValue(byte_arr, sizeof(byte_arr));
@@ -141,9 +175,18 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
     }
     else if (pChar2_value_int == START_CHRONOMETER_SLAVE)
     {
-      String msg = SERIAL_HEADER + String(pChar2_value_int);// + SERIAL_TRAILER;
-      Serial2.println(msg);
-      Serial.println("Sent: " + msg);
+      //String msg = SERIAL_HEADER + String(pChar2_value_int);// + SERIAL_TRAILER;
+      //Serial2.println(msg);
+      //Serial.println("Sent: " + msg);
+      payload_ESPNOW.code = START_CHRONOMETER_SLAVE;
+      payload_ESPNOW.direction = DOWNLINK;
+      payload_ESPNOW.sender_id = MASTER_ID;
+      payload_ESPNOW.reaction_time = 0;
+      print_ESPNOW_payload(payload_ESPNOW);
+
+      Serial.println("Sending serial data");
+      //Serial2.write((uint8_t *)&payload_ESPNOW, sizeof(payload_ESPNOW));
+      sendMessage(&payload_ESPNOW);
     }
   }
 };
@@ -236,7 +279,11 @@ void loop() {
     String incoming = Serial2.readStringUntil('\n');
     if (incoming.startsWith(SERIAL_HEADER))
     {
-      Serial.println("Received: " + incoming);
+      Serial.println("Data received on serial ports: " + incoming);
+      incoming.substring(3).getBytes(byte_arr, sizeof(byte_arr));
+      for (int i = 0; i < 5; i++) {
+        Serial.println(byte_arr[i], DEC);  // Print each byte as decimal
+      }
     }
   }
 }

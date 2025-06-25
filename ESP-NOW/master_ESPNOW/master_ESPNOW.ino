@@ -50,7 +50,16 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
   byte_arr[2] = (uint8_t)((received_payload.reaction_time >> 8) & 0xFF);
   byte_arr[3] = (uint8_t)((received_payload.reaction_time >> 16) & 0xFF);
   byte_arr[4] = (uint8_t)((received_payload.reaction_time >> 24) & 0xFF);
+  String result = String((char*)byte_arr);
 
+  Serial.println("bytes to be sent to BLE master: ");
+  for (int i = 0; i < 5; i++) {
+    Serial.println(byte_arr[i], DEC);  // Print each byte as decimal
+  }
+
+  //send serial data
+  Serial.println("Sending serial data to BLE master");
+  Serial2.println(SERIAL_HEADER + result);
 }
 
 void send_ESP_NOW_message ()
@@ -118,8 +127,41 @@ void setup() {
 }
 
 void loop() {
-  //Incoming serial data
+  static uint8_t headerIndex = 0;
+
   while (Serial2.available()) {
+    char incoming = Serial2.read();
+
+    // Header detection state machine
+    if (incoming == SERIAL_HEADER[headerIndex]) {
+      Serial.println("incoming");
+      headerIndex++;
+      if (headerIndex == HEADER_LEN) {
+        Serial.println("full header matched");
+        // Full header matched!
+        headerIndex = 0;
+
+        // Wait for struct data to arrive
+        if (Serial2.available() >= sizeof(struct_message)) {
+          struct_message msg;
+          Serial2.readBytes((uint8_t *)&msg, sizeof(msg));
+
+          Serial.println("Valid struct received:");
+          Serial.print("Direction: "); Serial.println(msg.direction);
+          Serial.print("Code: "); Serial.println(msg.code);
+          Serial.print("Sender ID: "); Serial.println(msg.sender_id);
+          Serial.print("Reaction Time: "); Serial.println(msg.reaction_time);
+        }
+      }
+    } else {
+      // Reset if mismatch
+      Serial.println("mismatch");
+      headerIndex = 0;
+    }
+  }
+
+  //Incoming serial data
+  /*while (Serial2.available()) {
     String incoming = Serial2.readStringUntil('\n');
     Serial.println("detected: " + incoming);
     if (incoming.startsWith(SERIAL_HEADER))
@@ -137,7 +179,7 @@ void loop() {
       }
 
     }
-  }
+  }*/
 
   //delay(1000); // Espera 1 segundos
 }
