@@ -90,6 +90,25 @@ void sendMessageSerial(char direction, int code, int sender_id, unsigned long re
   Serial2.write(buffer, offset);
 }
 
+
+void sendMessageBLE(int sender_id, unsigned long time_delta)
+{
+  byte_arr[0] = sender_id;
+  byte_arr[1] = (uint8_t)(time_delta & 0xFF);
+  byte_arr[2] = (uint8_t)((time_delta >> 8) & 0xFF);
+  byte_arr[3] = (uint8_t)((time_delta >> 16) & 0xFF);
+  byte_arr[4] = (uint8_t)((time_delta >> 24) & 0xFF);
+
+  Serial.println("bytes to be sent to app: ");
+  for (int i = 0; i < 5; i++) {
+    Serial.println(byte_arr[i], DEC);  // Print each byte as decimal
+  }
+  
+  //Send response time to app client
+  pCharacteristic->setValue(byte_arr, sizeof(byte_arr));
+  pCharacteristic->notify();
+}
+
 void print_ESPNOW_payload(struct_message payload)
 {
   Serial.println("payload's contents:");
@@ -180,21 +199,8 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           Serial.println(" milliseconds.");
           //disable chronometer
           chronometer_active = false;
-          //create payload
-          byte_arr[0] = master_id;
-          byte_arr[1] = (uint8_t)(time_delta & 0xFF);
-          byte_arr[2] = (uint8_t)((time_delta >> 8) & 0xFF);
-          byte_arr[3] = (uint8_t)((time_delta >> 16) & 0xFF);
-          byte_arr[4] = (uint8_t)((time_delta >> 24) & 0xFF);
-
-          Serial.println("bytes to be sent to app: ");
-          for (int i = 0; i < 5; i++) {
-            Serial.println(byte_arr[i], DEC);  // Print each byte as decimal
-          }
-          
-          //Send response time to app client
-          pCharacteristic->setValue(byte_arr, sizeof(byte_arr));
-          pCharacteristic->notify();
+          //send BLE data
+          sendMessageBLE(master_id, time_delta);
 
         }
         delay(10);//10 ms delay to prevent watchdog from triggering.
@@ -301,16 +307,68 @@ void setup() {
 }
 
 void loop() {
-  //Incoming serial data
+  static uint8_t headerIndex = 0;
+
   while (Serial2.available()) {
-    String incoming = Serial2.readStringUntil('\n');
-    if (incoming.startsWith(SERIAL_HEADER))
-    {
-      Serial.println("Data received on serial ports: " + incoming);
-      incoming.substring(3).getBytes(byte_arr, sizeof(byte_arr));
-      for (int i = 0; i < 5; i++) {
-        Serial.println(byte_arr[i], DEC);  // Print each byte as decimal
+    Serial.print("bytes avalable before: ");
+    Serial.println(Serial2.available());
+    char c = Serial2.read();
+    Serial.print("char read: ");
+    Serial.print(c);
+    Serial.println(int(c));
+
+    // Match header bytes
+    if (c == SERIAL_HEADER[headerIndex]) {
+      headerIndex++;
+      Serial.println("char header match");
+      if (headerIndex == HEADER_LEN) {
+        Serial.println("header match");
+        headerIndex = 0;
+
+        // Wait until full payload is available
+        delay(100);
+        Serial.println("available bytes");
+        Serial.println(Serial2.available());
+        
+        if (Serial2.available() >= 13) {
+          uint8_t buffer[PAYLOAD_LEN];
+          Serial2.readBytes(buffer, PAYLOAD_LEN);  // Read payload into buffer
+
+          // Optional: print raw bytes
+          printBufferBytes(buffer, PAYLOAD_LEN);
+
+          // Extract fields from buffer
+          char direction = buffer[0];
+          payload_ESPNOW.direction = direction;
+
+          int code;
+          memcpy(&code, buffer + 1, sizeof(code));
+          payload_ESPNOW.code = code;
+
+          int sender_id;
+          memcpy(&sender_id, buffer + 5, sizeof(sender_id));
+          payload_ESPNOW.sender_id = sender_id;
+
+          unsigned long reaction_time;
+          memcpy(&reaction_time, buffer + 9, sizeof(reaction_time));
+          payload_ESPNOW.reaction_time = reaction_time;
+
+          // Print parsed data
+          Serial.println("✅ Valid packet received:");
+          Serial.print("Direction: "); Serial.println(direction);
+          Serial.print("Code: "); Serial.println(code);
+          Serial.print("Sender ID: "); Serial.println(sender_id);
+          Serial.print("Reaction Time: "); Serial.println(reaction_time);
+          Serial.println("---------------------------");
+
+          if (payload_ESPNOW.code == UPLINK_REACTION_TIME)
+          {
+            sendMessageBLE(payload_ESPNOW.sender_id, payload_ESPNOW.reaction_time);
+          }
+        }
       }
+    } else {
+      headerIndex = 0;
     }
   }
 }

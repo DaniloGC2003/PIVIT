@@ -45,6 +45,9 @@ typedef struct struct_message
 #define HEADER_LEN 3
 #define SERIAL_TRAILER "END"
 #define SERIAL_START_CHRONOMETER "SSC"
-#define SERIAL
+
+// serial data info
+#define PAYLOAD_LEN 13
+#define PACKET_LEN (HEADER_LEN + PAYLOAD_LEN)
 
 #endif

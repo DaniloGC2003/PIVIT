@@ -3,8 +3,7 @@
 #include <WiFi.h>
 #include "../utils/utils.h"
 
-#define PAYLOAD_LEN 13
-#define PACKET_LEN (HEADER_LEN + PAYLOAD_LEN)
+
 
 bool active_serial = true;
 
