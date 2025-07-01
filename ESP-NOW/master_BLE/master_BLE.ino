@@ -50,17 +50,44 @@ struct_message payload_ESPNOW;
 #define CHAR1_UUID          "beb5483e-36e1-4688-b7f5-ea07361b26a8"//Characteristic to send response time and device's ID
 #define CHAR2_UUID          "2f6d0e14-ea50-4891-99d8-4bfbb72c1625"//Characteristic to communicate with clients (app and ESPs)
 
-void sendMessage(struct_message *msg) {
-  uint8_t buffer[HEADER_LEN + sizeof(struct_message)];
+void printBufferBytes(uint8_t *buffer, size_t length) {
+  Serial.println("---- Buffer Dump ----");
+  for (size_t i = 0; i < length; i++) {
+    Serial.print("Byte ");
+    Serial.print(i);
+    Serial.print(": 0x");
+    if (buffer[i] < 0x10) Serial.print('0');  // leading zero for single-digit hex
+    Serial.print(buffer[i], HEX);
+    Serial.print(" (");
+    Serial.print(buffer[i], DEC);
+    Serial.println(")");
+  }
+  Serial.println("----------------------");
+}
 
-  // Copy header
-  memcpy(buffer, SERIAL_HEADER, HEADER_LEN);
+void sendMessageSerial(char direction, int code, int sender_id, unsigned long reaction_time) {
+  uint8_t buffer[HEADER_LEN + 1 + 4 + 4 + 4];  // Total: 16 bytes
+  int offset = 0;
 
-  // Copy struct right after the header
-  memcpy(buffer + HEADER_LEN, msg, sizeof(struct_message));
+  // Add header
+  memcpy(buffer + offset, SERIAL_HEADER, HEADER_LEN);
+  offset += HEADER_LEN;
 
-  // Send entire buffer at once
-  Serial2.write(buffer, sizeof(buffer));
+  // Add data
+  buffer[offset++] = direction;  // 1 byte
+
+  memcpy(buffer + offset, &code, sizeof(code));
+  offset += sizeof(code);
+
+  memcpy(buffer + offset, &sender_id, sizeof(sender_id));
+  offset += sizeof(sender_id);
+
+  memcpy(buffer + offset, &reaction_time, sizeof(reaction_time));
+  offset += sizeof(reaction_time);
+
+  printBufferBytes(buffer, offset);
+  // Send all at once
+  Serial2.write(buffer, offset);
 }
 
 void print_ESPNOW_payload(struct_message payload)
@@ -178,15 +205,15 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
       //String msg = SERIAL_HEADER + String(pChar2_value_int);// + SERIAL_TRAILER;
       //Serial2.println(msg);
       //Serial.println("Sent: " + msg);
-      payload_ESPNOW.code = START_CHRONOMETER_SLAVE;
+      /*payload_ESPNOW.code = START_CHRONOMETER_SLAVE;
       payload_ESPNOW.direction = DOWNLINK;
       payload_ESPNOW.sender_id = MASTER_ID;
       payload_ESPNOW.reaction_time = 0;
-      print_ESPNOW_payload(payload_ESPNOW);
+      print_ESPNOW_payload(payload_ESPNOW);*/
 
       Serial.println("Sending serial data");
       //Serial2.write((uint8_t *)&payload_ESPNOW, sizeof(payload_ESPNOW));
-      sendMessage(&payload_ESPNOW);
+      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE, MASTER_ID, 0);
     }
   }
 };

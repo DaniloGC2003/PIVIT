@@ -3,9 +3,10 @@
 #include <WiFi.h>
 #include "../utils/utils.h"
 
-bool deviceConnected = false;
-bool oldDeviceConnected = false;
-uint32_t value = 0;
+#define PAYLOAD_LEN 13
+#define PACKET_LEN (HEADER_LEN + PAYLOAD_LEN)
+
+bool active_serial = true;
 
 //variables to calculate elapsed time
 unsigned long start_time = 0;
@@ -24,6 +25,33 @@ uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 struct_message payload_ESPNOW;
 
 
+
+void sendMessageSerial(char direction, int code, int sender_id, unsigned long reaction_time) {
+  uint8_t buffer[HEADER_LEN + 1 + 4 + 4 + 4];  // Total: 16 bytes
+  int offset = 0;
+
+  // Add header
+  memcpy(buffer + offset, SERIAL_HEADER, HEADER_LEN);
+  offset += HEADER_LEN;
+
+  // Add data
+  buffer[offset++] = direction;  // 1 byte
+
+  memcpy(buffer + offset, &code, sizeof(code));
+  offset += sizeof(code);
+
+  memcpy(buffer + offset, &sender_id, sizeof(sender_id));
+  offset += sizeof(sender_id);
+
+  memcpy(buffer + offset, &reaction_time, sizeof(reaction_time));
+  offset += sizeof(reaction_time);
+
+  printBufferBytes(buffer, offset);
+  // Send all at once
+  Serial2.write(buffer, offset);
+}
+
+
 void print_ESPNOW_payload(struct_message payload)
 {
   Serial.println("payload's contents:");
@@ -39,27 +67,17 @@ void print_ESPNOW_payload(struct_message payload)
 
 // ESP-NOW callback function
 void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, int len) {
-  Serial.println("oissss");
+  active_serial = true;
   struct_message received_payload;
   memcpy(&received_payload, incomingData, sizeof(received_payload));
   Serial.println("received data from slave: ");
   print_ESPNOW_payload(received_payload);
 
-  byte_arr[0] = (uint8_t)(received_payload.sender_id & 0xFF);
-  byte_arr[1] = (uint8_t)(received_payload.reaction_time & 0xFF);
-  byte_arr[2] = (uint8_t)((received_payload.reaction_time >> 8) & 0xFF);
-  byte_arr[3] = (uint8_t)((received_payload.reaction_time >> 16) & 0xFF);
-  byte_arr[4] = (uint8_t)((received_payload.reaction_time >> 24) & 0xFF);
-  String result = String((char*)byte_arr);
-
-  Serial.println("bytes to be sent to BLE master: ");
-  for (int i = 0; i < 5; i++) {
-    Serial.println(byte_arr[i], DEC);  // Print each byte as decimal
-  }
 
   //send serial data
   Serial.println("Sending serial data to BLE master");
-  Serial2.println(SERIAL_HEADER + result);
+  sendMessageSerial(received_payload.direction, received_payload.code, 
+                    received_payload.sender_id, received_payload.reaction_time);  
 }
 
 void send_ESP_NOW_message ()
@@ -126,60 +144,85 @@ void setup() {
   Serial.println("setup completed");
 }
 
+void printBufferBytes(uint8_t *buffer, size_t length) {
+  Serial.println("---- Buffer Dump ----");
+  for (size_t i = 0; i < length; i++) {
+    Serial.print("Byte ");
+    Serial.print(i);
+    Serial.print(": 0x");
+    if (buffer[i] < 0x10) Serial.print('0');
+    Serial.print(buffer[i], HEX);
+    Serial.print(" (");
+    Serial.print(buffer[i], DEC);
+    Serial.println(")");
+  }
+  Serial.println("----------------------");
+}
+
 void loop() {
   static uint8_t headerIndex = 0;
 
-  while (Serial2.available()) {
-    char incoming = Serial2.read();
+  while (Serial2.available() && active_serial) {
+    Serial.print("bytes avalable before: ");
+    Serial.println(Serial2.available());
+    char c = Serial2.read();
+    Serial.print("char read: ");
+    Serial.print(c);
+    Serial.println(int(c));
 
-    // Header detection state machine
-    if (incoming == SERIAL_HEADER[headerIndex]) {
-      Serial.println("incoming");
+    // Match header bytes
+    if (c == SERIAL_HEADER[headerIndex]) {
       headerIndex++;
+      Serial.println("char header match");
       if (headerIndex == HEADER_LEN) {
-        Serial.println("full header matched");
-        // Full header matched!
+        Serial.println("header match");
         headerIndex = 0;
 
-        // Wait for struct data to arrive
-        if (Serial2.available() >= sizeof(struct_message)) {
-          struct_message msg;
-          Serial2.readBytes((uint8_t *)&msg, sizeof(msg));
+        // Wait until full payload is available
+        delay(100);
+        Serial.println("available bytes");
+        Serial.println(Serial2.available());
+        
+        if (Serial2.available() >= 13) {
+          uint8_t buffer[PAYLOAD_LEN];
+          Serial2.readBytes(buffer, PAYLOAD_LEN);  // Read payload into buffer
 
-          Serial.println("Valid struct received:");
-          Serial.print("Direction: "); Serial.println(msg.direction);
-          Serial.print("Code: "); Serial.println(msg.code);
-          Serial.print("Sender ID: "); Serial.println(msg.sender_id);
-          Serial.print("Reaction Time: "); Serial.println(msg.reaction_time);
+          // Optional: print raw bytes
+          printBufferBytes(buffer, PAYLOAD_LEN);
+
+          // Extract fields from buffer
+          char direction = buffer[0];
+          payload_ESPNOW.direction = direction;
+
+          int code;
+          memcpy(&code, buffer + 1, sizeof(code));
+          payload_ESPNOW.code = code;
+
+          int sender_id;
+          memcpy(&sender_id, buffer + 5, sizeof(sender_id));
+          payload_ESPNOW.sender_id = sender_id;
+
+          unsigned long reaction_time;
+          memcpy(&reaction_time, buffer + 9, sizeof(reaction_time));
+          payload_ESPNOW.reaction_time = reaction_time;
+
+          // Print parsed data
+          Serial.println("✅ Valid packet received:");
+          Serial.print("Direction: "); Serial.println(direction);
+          Serial.print("Code: "); Serial.println(code);
+          Serial.print("Sender ID: "); Serial.println(sender_id);
+          Serial.print("Reaction Time: "); Serial.println(reaction_time);
+          Serial.println("---------------------------");
+
+          if (payload_ESPNOW.code == START_CHRONOMETER_SLAVE)
+          {
+            active_serial = false;
+            send_ESP_NOW_message();
+          }
         }
       }
     } else {
-      // Reset if mismatch
-      Serial.println("mismatch");
       headerIndex = 0;
     }
   }
-
-  //Incoming serial data
-  /*while (Serial2.available()) {
-    String incoming = Serial2.readStringUntil('\n');
-    Serial.println("detected: " + incoming);
-    if (incoming.startsWith(SERIAL_HEADER))
-    {
-      Serial.println("Received: " + incoming);
-      int received_data = incoming.substring(3).toInt();
-      if (received_data == START_CHRONOMETER_SLAVE)
-      {
-        Serial.println("Serial: start chronometer slave");
-        payload_ESPNOW.code = START_CHRONOMETER_SLAVE;
-        payload_ESPNOW.direction = DOWNLINK;
-        payload_ESPNOW.reaction_time = 0.0;
-
-        send_ESP_NOW_message();
-      }
-
-    }
-  }*/
-
-  //delay(1000); // Espera 1 segundos
 }
