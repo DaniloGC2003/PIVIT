@@ -8,7 +8,7 @@ A fim de poder rodar os programas aqui desenvolvidos, será necessário:
 > https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 
 Após esse processo, as dependências necessárias para a ESP-32 usada no projeto (incluindo a biblioteca de BLE) serão instaladas.
-- Instalar o boards manager da ESP32. Em Tools -> Boards -> Boards Manager, pesquisar por "esp32". EM seguida, instalar o boards manager "esp32" da Espressif Systems. (OBS: para esse projeto, usar a versão 3.1.3. Aparentemente, a versão 3.2.0 não funciona como esperado).
+- Instalar o boards manager da ESP32. Em Tools -> Boards -> Boards Manager, pesquisar por "esp32". EM seguida, instalar o boards manager "esp32" da Espressif Systems.
 
 ## Pasta BLE
 Diretório legado. Possui códigos desenvolvidos quando se pensava em implementar bluetooth low energy (BLE) como único protocolo de comunicação da solução.
