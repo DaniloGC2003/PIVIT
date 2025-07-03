@@ -48,7 +48,11 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
 
   if (received_payload.direction == DOWNLINK)
   {
-    if (received_payload.code == START_CHRONOMETER_SLAVE)
+    if ((received_payload.code == START_CHRONOMETER_SLAVE1 && ID_number == 1) || (received_payload.code == START_CHRONOMETER_SLAVE2 && ID_number == 2) ||
+        (received_payload.code == START_CHRONOMETER_SLAVE3 && ID_number == 3) || (received_payload.code == START_CHRONOMETER_SLAVE4 && ID_number == 4) ||
+        (received_payload.code == START_CHRONOMETER_SLAVE5 && ID_number == 5) || (received_payload.code == START_CHRONOMETER_SLAVE6 && ID_number == 6) ||
+        (received_payload.code == START_CHRONOMETER_SLAVE7 && ID_number == 7))
+    {
       Serial.println("start chronometer");
 
       //turn LED green
@@ -96,6 +100,7 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
         }
         delay(10);//10 ms delay to prevent watchdog from triggering.
       }
+    }
   }
 }
 

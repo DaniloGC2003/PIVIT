@@ -206,20 +206,36 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
         delay(10);//10 ms delay to prevent watchdog from triggering.
       }
     }
-    else if (pChar2_value_int == START_CHRONOMETER_SLAVE)
+    else if (pChar2_value_int == START_CHRONOMETER_SLAVE1)
     {
-      //String msg = SERIAL_HEADER + String(pChar2_value_int);// + SERIAL_TRAILER;
-      //Serial2.println(msg);
-      //Serial.println("Sent: " + msg);
-      /*payload_ESPNOW.code = START_CHRONOMETER_SLAVE;
-      payload_ESPNOW.direction = DOWNLINK;
-      payload_ESPNOW.sender_id = MASTER_ID;
-      payload_ESPNOW.reaction_time = 0;
-      print_ESPNOW_payload(payload_ESPNOW);*/
-
-      Serial.println("Sending serial data");
-      //Serial2.write((uint8_t *)&payload_ESPNOW, sizeof(payload_ESPNOW));
-      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE, MASTER_ID, 0);
+      Serial.println("Start slave 1. Sending serial data");
+      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE1, MASTER_ID, 0);
+    }
+    else if (pChar2_value_int == START_CHRONOMETER_SLAVE2)
+    {
+      Serial.println("Start slave 2. Sending serial data");
+      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE2, MASTER_ID, 0);
+    }
+    else if (pChar2_value_int == START_CHRONOMETER_SLAVE3)
+    {
+      Serial.println("Start slave 3. Sending serial data");
+      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE3, MASTER_ID, 0);
+    }else if (pChar2_value_int == START_CHRONOMETER_SLAVE4)
+    {
+      Serial.println("Start slave 4. Sending serial data");
+      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE4, MASTER_ID, 0);
+    }else if (pChar2_value_int == START_CHRONOMETER_SLAVE5)
+    {
+      Serial.println("Start slave 5. Sending serial data");
+      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE5, MASTER_ID, 0);
+    }else if (pChar2_value_int == START_CHRONOMETER_SLAVE6)
+    {
+      Serial.println("Start slave 6. Sending serial data");
+      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE6, MASTER_ID, 0);
+    }else if (pChar2_value_int == START_CHRONOMETER_SLAVE7)
+    {
+      Serial.println("Start slave 7. Sending serial data");
+      sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE7, MASTER_ID, 0);
     }
   }
 };

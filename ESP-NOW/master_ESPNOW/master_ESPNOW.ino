@@ -213,9 +213,12 @@ void loop() {
           Serial.print("Reaction Time: "); Serial.println(reaction_time);
           Serial.println("---------------------------");
 
-          if (payload_ESPNOW.code == START_CHRONOMETER_SLAVE)
-          {
-            active_serial = false;
+          if (payload_ESPNOW.code == START_CHRONOMETER_SLAVE1 || payload_ESPNOW.code == START_CHRONOMETER_SLAVE2 ||
+              payload_ESPNOW.code == START_CHRONOMETER_SLAVE3 || payload_ESPNOW.code == START_CHRONOMETER_SLAVE4 ||
+              payload_ESPNOW.code == START_CHRONOMETER_SLAVE5 || payload_ESPNOW.code == START_CHRONOMETER_SLAVE6 ||
+              payload_ESPNOW.code == START_CHRONOMETER_SLAVE7)
+          { // erial interface will only be reactivated once it receives an uplink ESP_NOW packet
+            active_serial = false;// Stop ESP32 from listening to incoming serial data.
             send_ESP_NOW_message();
           }
         }
