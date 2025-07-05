@@ -64,6 +64,14 @@ void print_ESPNOW_payload(struct_message payload)
   Serial.println(payload.reaction_time);
 }
 
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  if (status == ESP_NOW_SEND_SUCCESS) {
+    Serial.println("ACK received: Delivery successful");
+  } else {
+    Serial.println("ACK not received: Delivery failed");
+  }
+}
+
 // ESP-NOW callback function
 void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, int len) {
   active_serial = true;
@@ -86,9 +94,9 @@ void send_ESP_NOW_message ()
                         (uint8_t*) &payload_ESPNOW,
                         sizeof(payload_ESPNOW)); 
   if (result == ESP_OK) {
-    Serial.println("Sent");
+    Serial.println("ESP-NOW message sent successfully");
   } else {
-    Serial.println("Error on sending");
+    Serial.println("Error on sending ESP-NOW message");
   }
 }
 
@@ -124,8 +132,9 @@ void setup() {
   payload_ESPNOW.reaction_time = 0.0;
 
 
-  // Register callback function
+  // Register callback functions
   esp_now_register_recv_cb(OnDataRecv);
+  esp_now_register_send_cb(OnDataSent);
 
 
   /* GPIO setup */
@@ -162,12 +171,12 @@ void loop() {
   static uint8_t headerIndex = 0;
 
   while (Serial2.available() && active_serial) {
-    Serial.print("bytes avalable before: ");
-    Serial.println(Serial2.available());
+    //Serial.print("bytes avalable before: ");
+    //Serial.println(Serial2.available());
     char c = Serial2.read();
-    Serial.print("char read: ");
-    Serial.print(c);
-    Serial.println(int(c));
+    //Serial.print("char read: ");
+    //Serial.print(c);
+    //Serial.println(int(c));
 
     // Match header bytes
     if (c == SERIAL_HEADER[headerIndex]) {
@@ -186,7 +195,6 @@ void loop() {
           uint8_t buffer[PAYLOAD_LEN];
           Serial2.readBytes(buffer, PAYLOAD_LEN);  // Read payload into buffer
 
-          // Optional: print raw bytes
           printBufferBytes(buffer, PAYLOAD_LEN);
 
           // Extract fields from buffer
@@ -217,7 +225,7 @@ void loop() {
               payload_ESPNOW.code == START_CHRONOMETER_SLAVE3 || payload_ESPNOW.code == START_CHRONOMETER_SLAVE4 ||
               payload_ESPNOW.code == START_CHRONOMETER_SLAVE5 || payload_ESPNOW.code == START_CHRONOMETER_SLAVE6 ||
               payload_ESPNOW.code == START_CHRONOMETER_SLAVE7)
-          { // erial interface will only be reactivated once it receives an uplink ESP_NOW packet
+          { // Serial interface will only be reactivated once it receives an ESP_NOW uplink packet
             active_serial = false;// Stop ESP32 from listening to incoming serial data.
             send_ESP_NOW_message();
           }

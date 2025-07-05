@@ -241,8 +241,8 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
 };
 
 void setup() {
-  Serial.begin(115200);  // For debugging on USB
-  Serial.println("Device boot");
+  Serial.begin(115200);  // Serial monitor
+  Serial.println("Device boot...");
 
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);  // UART2
   Serial.println("UART Two-Way Chat started...");
@@ -292,7 +292,7 @@ void setup() {
   pBLE2902_2->setNotifications(true);
   pCharacteristic_2->addDescriptor(pBLE2902_2);
   
-  // After defining the descriptors, set the callback functions
+  // Set callback function
   pCharacteristic_2->setCallbacks(new CharacteristicCallBack());
   
   // Start the service
@@ -326,19 +326,19 @@ void loop() {
   static uint8_t headerIndex = 0;
 
   while (Serial2.available()) {
-    Serial.print("bytes avalable before: ");
-    Serial.println(Serial2.available());
+    //Serial.print("bytes available before: ");
+    //Serial.println(Serial2.available());
     char c = Serial2.read();
-    Serial.print("char read: ");
-    Serial.print(c);
-    Serial.println(int(c));
+    //Serial.print("char read: ");
+    //Serial.print(c);
+    //Serial.println(int(c));
 
     // Match header bytes
     if (c == SERIAL_HEADER[headerIndex]) {
       headerIndex++;
-      Serial.println("char header match");
+      Serial.println("Char header match");
       if (headerIndex == HEADER_LEN) {
-        Serial.println("header match");
+        Serial.println("Header match");
         headerIndex = 0;
 
         // Wait until full payload is available
@@ -350,7 +350,6 @@ void loop() {
           uint8_t buffer[PAYLOAD_LEN];
           Serial2.readBytes(buffer, PAYLOAD_LEN);  // Read payload into buffer
 
-          // Optional: print raw bytes
           printBufferBytes(buffer, PAYLOAD_LEN);
 
           // Extract fields from buffer

@@ -12,6 +12,8 @@ typedef struct struct_message
   unsigned long reaction_time;
 } struct_message;
 
+#define RESEND_ATTEMPTS 2
+
 #define MASTER_ID 0
 
 // Characters for identifying payload direction
