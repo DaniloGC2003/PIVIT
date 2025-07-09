@@ -12,9 +12,13 @@ Após esse processo, as dependências necessárias para a ESP-32 usada no projet
 
 ## Topologia
 A solução envolve uma rede de dispositivos que usam BLE, ESP-NOW e barramentos seriais para realizar a comunicação entre si.
+
 Esse projeto tem como objetivo criar um teste de tempo de reação. Nele, diversos dispositivos contendo um botão e um LED serão dispostos ao alcance do usuário. Sempre que um LED é aceso, o objetivo do usuário é apertar o botão desse dispositivo o mais rápido o possível. O intervalo de tempo entre o acender do LED e a resposta do usuário é chamado de tempo de reação. Essas informações serão enviadas a um aplicativo celular.
+
 O dispositivo mestre é a ponte de comunicação entre os dispositivos com botão e LED (chamados slaves). Ele é composto por duas ESPs: a primeira realiza transmissão de dados BLE, já a outra realiza transmissão via ESP-NOW. As ESPs do dispositivo mestre usam barramentos seriais para comunicação entre si.
+
 Os dispositivos slaves são ESPs que se comunicam com o dispositivo mestre via ESP-NOW. Possuem a função de enviar e receber informações do dispositivo mestre e cronometrar o tempo de reação do usuário.
+
 Por fim, o dispositivo móvel completa a topologia da solução. O aplicativo contido nele se comunica com o mestre via BLE e é responsável por enviar ordens de ativação de slaves.
 
 ## Pasta BLE
