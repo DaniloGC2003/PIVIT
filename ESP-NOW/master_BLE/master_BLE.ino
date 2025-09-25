@@ -12,7 +12,11 @@
 #include <BLE2902.h>
 #include <esp_now.h>
 #include <WiFi.h>
+#include <Adafruit_NeoPixel.h>
 #include "../utils/utils.h"
+
+//for on-board RGB LED control
+Adafruit_NeoPixel strip(1, PIN_LED, NEO_GRB + NEO_KHZ800);
 
 //BLE characteristic 1: sends response time
 //BLE characteristic 2: sends and receives signals
@@ -49,6 +53,11 @@ struct_message payload_ESPNOW;
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHAR1_UUID          "beb5483e-36e1-4688-b7f5-ea07361b26a8"//Characteristic to send response time and device's ID
 #define CHAR2_UUID          "2f6d0e14-ea50-4891-99d8-4bfbb72c1625"//Characteristic to communicate with clients (app and ESPs)
+
+void set_onboard_LED (int r, int g, int b) {
+  strip.setPixelColor(0, strip.Color(r, g, b));
+  strip.show();
+}
 
 void printBufferBytes(uint8_t *buffer, size_t length) {
   Serial.println("---- Buffer Dump ----");
@@ -138,10 +147,12 @@ class MyServerCallbacks: public BLEServerCallbacks {
       digitalWrite(PIN_BLUE, LOW);
       digitalWrite(PIN_RED, LOW);
       digitalWrite(PIN_GREEN, LOW);
+      set_onboard_LED (255, 255, 255);
       delay(1000);
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, HIGH);
       digitalWrite(PIN_GREEN, HIGH);
+      set_onboard_LED (0, 0, 0);
     };
 
     void onDisconnect(BLEServer* pServer) {
@@ -156,10 +167,12 @@ class MyServerCallbacks: public BLEServerCallbacks {
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, LOW);
       digitalWrite(PIN_GREEN, HIGH);
+      set_onboard_LED (255, 0, 0);
       delay(1000);
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, HIGH);
       digitalWrite(PIN_GREEN, HIGH);
+      set_onboard_LED (0, 0, 0);
     }
 };
 
@@ -177,6 +190,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, HIGH);
       digitalWrite(PIN_GREEN, LOW);
+      set_onboard_LED (0, 255, 0);
 
       //start counting time
       chronometer_active = true;
@@ -192,6 +206,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           digitalWrite(PIN_BLUE, HIGH);
           digitalWrite(PIN_RED, HIGH);
           digitalWrite(PIN_GREEN, HIGH);
+          set_onboard_LED (0, 0, 0);
           end_time = millis();
           unsigned long time_delta = end_time - start_time;
           Serial.print("Response time: ");
@@ -236,6 +251,12 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
     {
       Serial.println("Start slave 7. Sending serial data");
       sendMessageSerial(DOWNLINK, START_CHRONOMETER_SLAVE7, MASTER_ID, 0);
+    }else if (pChar2_value_int == RESET_ESP_NOW_MASTER)
+    {
+      Serial.println("Resetting ESP-NOW master.");
+      //digitalWrite(PIN_RESET, HIGH);
+      //delay(200);
+      //digitalWrite(PIN_RESET, LOW);
     }
   }
 };
@@ -246,6 +267,9 @@ void setup() {
 
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);  // UART2
   Serial.println("UART Two-Way Chat started...");
+
+  strip.begin();           
+  strip.show(); 
 
   /* BLE setup */
 
@@ -313,6 +337,7 @@ void setup() {
   pinMode(PIN_RED, OUTPUT);
   pinMode(PIN_GREEN, OUTPUT);
   pinMode(BUTTON_PIN_CHRONOMETER, INPUT_PULLUP);  
+  pinMode(PIN_RESET, INPUT);
 
   //disable RGB LED
   digitalWrite(PIN_BLUE, HIGH);

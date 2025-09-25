@@ -5,12 +5,20 @@
   
   DroneBot Workshop 2022
   https://dronebotworkshop.com
+
+  modified by Danilo Gondo Chinen
 */
 
 // Include Libraries
 #include <esp_now.h>
 #include <WiFi.h>
+#include <FastLED.h>
 #include "../utils/utils.h"
+
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER GRB
+//for on-board RGB LED control
+CRGB leds[1];
 
 //variables to calculate elapsed time
 unsigned long start_time = 0;
@@ -23,7 +31,6 @@ int ID_number = 0;
 
 // payload for ESP-NOW messages
 struct_message payload_ESPNOW;
-
 
 
 void print_ESPNOW_payload(struct_message payload)
@@ -59,6 +66,8 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, HIGH);
       digitalWrite(PIN_GREEN, LOW);
+      leds[0] = CRGB::Green;
+      FastLED.show();
       
       //start counting time
       chronometer_active = true;
@@ -74,6 +83,8 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
           digitalWrite(PIN_BLUE, HIGH);
           digitalWrite(PIN_RED, HIGH);
           digitalWrite(PIN_GREEN, HIGH);
+          leds[0] = CRGB::Black;   // equivalent to (0,0,0)
+          FastLED.show();
           end_time = millis();
           unsigned long time_delta = end_time - start_time;
           Serial.print("Response time: ");
@@ -109,6 +120,10 @@ void setup() {
   Serial.begin(115200);
 
   /* GPIO setup */
+  //for on-board RGB LED
+  FastLED.addLeds<LED_TYPE, PIN_LED, COLOR_ORDER>(leds, 1);
+  FastLED.setBrightness(255);
+
   //RGB LED pins
   pinMode(PIN_BLUE, OUTPUT);
   pinMode(PIN_RED, OUTPUT);
@@ -167,5 +182,5 @@ void setup() {
 }
  
 void loop() {
-    delay(3000);
+  delay(1000);
 }

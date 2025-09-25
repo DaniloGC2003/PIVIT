@@ -25,6 +25,9 @@ typedef struct struct_message
 #define PIN_RED 5
 #define PIN_GREEN 6
 
+// GPIO pin for on-board LED
+#define PIN_LED 48
+
 // GPIO pin for push button
 #define BUTTON_PIN_CHRONOMETER 0
 
@@ -33,9 +36,12 @@ typedef struct struct_message
 #define PIN_ID_1 15
 #define PIN_ID_0 16
 
-//GPIO pins for seiral communication
+//GPIO pins for serial communication
 #define RXD2 16
 #define TXD2 17
+
+//GPIO pin for sending reset signal to ESP-NOW master
+#define PIN_RESET 2
 
 // codes for BLE, ESP-NOW and UART
 #define UPLINK_REACTION_TIME 10 
@@ -47,6 +53,7 @@ typedef struct struct_message
 #define START_CHRONOMETER_SLAVE5 16
 #define START_CHRONOMETER_SLAVE6 17
 #define START_CHRONOMETER_SLAVE7 18
+#define RESET_ESP_NOW_MASTER 19
 
 // serial data headers
 #define SERIAL_HEADER "ESP"
