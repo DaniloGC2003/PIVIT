@@ -21,6 +21,9 @@ Os dispositivos slaves são ESPs que se comunicam com o dispositivo mestre via E
 
 Por fim, o dispositivo móvel completa a topologia da solução. O aplicativo contido nele se comunica com o mestre via BLE e é responsável por enviar ordens de ativação de slaves.
 
+## Pasta app
+Contém arquivos referentes ao aplicativo android desenvolvido. O arquivo de extensão .apk é usado para instalar o app no dispositivo móvel. O arquivo de extensão .aia é usado para realizar edições na plataforma MIT app inventor.
+
 ## Pasta BLE
 Diretório legado. Possui códigos desenvolvidos quando se pensava em implementar bluetooth low energy (BLE) como único protocolo de comunicação da solução.
 
