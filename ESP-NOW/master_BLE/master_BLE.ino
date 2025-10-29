@@ -254,9 +254,9 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
     }else if (pChar2_value_int == RESET_ESP_NOW_MASTER)
     {
       Serial.println("Resetting ESP-NOW master.");
-      //digitalWrite(PIN_RESET, HIGH);
-      //delay(200);
-      //digitalWrite(PIN_RESET, LOW);
+      digitalWrite(PIN_RESET, HIGH);
+      delay(200);
+      digitalWrite(PIN_RESET, LOW);
     }
   }
 };
@@ -337,12 +337,14 @@ void setup() {
   pinMode(PIN_RED, OUTPUT);
   pinMode(PIN_GREEN, OUTPUT);
   pinMode(BUTTON_PIN_CHRONOMETER, INPUT_PULLUP);  
-  pinMode(PIN_RESET, INPUT);
+  pinMode(PIN_RESET, OUTPUT);
 
   //disable RGB LED
   digitalWrite(PIN_BLUE, HIGH);
   digitalWrite(PIN_RED, HIGH);
   digitalWrite(PIN_GREEN, HIGH);
+
+  digitalWrite(PIN_RESET, LOW);
 
   Serial.println("setup completed");
 }
