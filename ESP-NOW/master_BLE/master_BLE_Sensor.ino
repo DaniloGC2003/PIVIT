@@ -15,7 +15,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_NeoPixel.h>
-#include "utils.h"
+#include "../utils/utils.h"
 
 //for on-board RGB LED control
 Adafruit_NeoPixel strip(1, PIN_LED, NEO_GRB + NEO_KHZ800);
