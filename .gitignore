@@ -1,0 +1,20 @@
+# KiCad backup files
+*.kicad_sch-bak
+*.kicad_pcb-bak
+
+# Backup folders
+*-backups/
+
+# Gerbers, plots, exports
+*.gbr
+*.ger
+*.drl
+*.pos
+*.xml
+*.csv
+*.zip
+
+# Cache & temp
+*-cache.lib
+fp-info-cache
+__pycache__/
