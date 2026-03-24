@@ -53,6 +53,8 @@ uint8_t master_id = MASTER_ID;
 // payload for ESP-NOW messages
 struct_message payload_ESPNOW;
 
+bool operation_mode = 0; //pressure pad = 0; push button = 1
+
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
@@ -205,25 +207,31 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
       int it = 0;
       int ref = 0;
       int valor_anterior = 0;
+
       while (chronometer_active == true)
       {
-        anterior = atual;
-          atual = bmp.readPressure();
-          if(it == 0)
-            ref = atual;
-          if(atual > maior){
-            maior = atual;
+        if (operation_mode == 0) {
+          anterior = atual;
+            atual = bmp.readPressure();
+            if(it == 0)
+              ref = atual;
+            if(atual > maior){
+              maior = atual;
+          }
+          if (atual / 100.0F < 900){
+            Serial.println("Bolsa vazia");
+          }
         }
-        if (atual / 100.0F < 900){
-          Serial.println("Bolsa vazia");
-        }
-        else if (atual / 100.0F > (ref / 100.0F) + 5 && it > 0 && valor_anterior > atual)//if button was pressed while chronometer was active
+        else if ((atual / 100.0F > (ref / 100.0F) + 5 && it > 0 && valor_anterior > atual) && operation_mode == 0 || digitalRead(BUTTON_PIN_CHRONOMETER) == LOW && operation_mode == 1)//if button was pressed while chronometer was active
         {
           Serial.println("BUTTON PRESSED. SUBMITTING RESPONSE TIME");
           
+          if (operation_mode == 0){
+            Serial.println(maior / 100.0F);
+            maior = 0;
+          }
+
           //turn off LED
-          Serial.println(maior / 100.0F);
-           maior = 0;
           digitalWrite(PIN_BLUE, HIGH);
           digitalWrite(PIN_RED, HIGH);
           digitalWrite(PIN_GREEN, HIGH);
@@ -237,14 +245,17 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           chronometer_active = false;
           //send BLE data
           sendMessageBLE(master_id, time_delta);
-          Serial.println("O valor máximo de pressão é:");
-          Serial.println(((atual  - ref)/ 100.0F ) * 0.75 * 10);
+          if (operation_mode == 0){
+            Serial.println("O valor máximo de pressão é:");
+            Serial.println(((atual  - ref)/ 100.0F ) * 0.75 * 10);
+          }
 
         }
         delay(10);//10 ms delay to prevent watchdog from triggering.
-        
-        it++;
-        valor_anterior = atual;
+        if (operation_mode == 0){
+          it++;
+          valor_anterior = atual;
+        }
       }
     }
     else if (pChar2_value_int == START_CHRONOMETER_SLAVE1)
@@ -299,17 +310,20 @@ void setup() {
 
   if (!bmp.begin(0x76)) {  // O endereço padrão do protocolo de comunicação I²C é o endereço 0x76 ou 0x77
     Serial.println("Falha ao detectar o BMP280! Verifique a conexão.");
-    while (1);
+    operation_mode = 1;
   }
 
-  // Configurações iniciais do sensor
-  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,      // Modo de operação
-                  Adafruit_BMP280::SAMPLING_X2,      // Sobreamostragem da pressão
-                  Adafruit_BMP280::SAMPLING_X16,     // Sobreamostragem da temperatura
-                  Adafruit_BMP280::FILTER_X16,       // Filtro interno
-                  Adafruit_BMP280::STANDBY_MS_1);  // Tempo de espera entre leituras
+  if (operation_mode == 0)
+  {
+    // Configurações iniciais do sensor
+    bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,      // Modo de operação
+                    Adafruit_BMP280::SAMPLING_X2,      // Sobreamostragem da pressão
+                    Adafruit_BMP280::SAMPLING_X16,     // Sobreamostragem da temperatura
+                    Adafruit_BMP280::FILTER_X16,       // Filtro interno
+                    Adafruit_BMP280::STANDBY_MS_1);  // Tempo de espera entre leituras
 
-  //O sensor tem  várias opções de espera entre leituras, só ver em https://github.com/adafruit/Adafruit_BMP280_Library/blob/master/keywords.txt
+    //O sensor tem  várias opções de espera entre leituras, só ver em https://github.com/adafruit/Adafruit_BMP280_Library/blob/master/keywords.txt
+  }
 
   /* BLE setup */
 
@@ -376,7 +390,10 @@ void setup() {
   pinMode(PIN_BLUE, OUTPUT);
   pinMode(PIN_RED, OUTPUT);
   pinMode(PIN_GREEN, OUTPUT);
-  // pinMode(BUTTON_PIN_CHRONOMETER, INPUT_PULLUP);  
+  if (operation_mode == 1)
+  {
+    pinMode(BUTTON_PIN_CHRONOMETER, INPUT_PULLUP);  
+  }
   // pinMode(PIN_RESET, OUTPUT);
 
   //disable RGB LED
