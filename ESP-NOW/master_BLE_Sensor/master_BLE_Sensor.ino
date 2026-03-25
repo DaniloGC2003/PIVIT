@@ -15,10 +15,15 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_NeoPixel.h>
+#include <FastLED.h>
 #include "../utils/utils.h"
 
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER GRB
 //for on-board RGB LED control
-Adafruit_NeoPixel strip(1, PIN_LED, NEO_GRB + NEO_KHZ800);
+CRGB leds[1];
+
+
 Adafruit_BMP280 bmp;
 
 //BLE characteristic 1: sends response time
@@ -61,11 +66,6 @@ bool operation_mode = 0; //pressure pad = 0; push button = 1
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHAR1_UUID          "beb5483e-36e1-4688-b7f5-ea07361b26a8"//Characteristic to send response time and device's ID
 #define CHAR2_UUID          "2f6d0e14-ea50-4891-99d8-4bfbb72c1625"//Characteristic to communicate with clients (app and ESPs)
-
-void set_onboard_LED (int r, int g, int b) {
-  strip.setPixelColor(0, strip.Color(r, g, b));
-  strip.show();
-}
 
 void printBufferBytes(uint8_t *buffer, size_t length) {
   Serial.println("---- Buffer Dump ----");
@@ -155,12 +155,14 @@ class MyServerCallbacks: public BLEServerCallbacks {
       digitalWrite(PIN_BLUE, LOW);
       digitalWrite(PIN_RED, LOW);
       digitalWrite(PIN_GREEN, LOW);
-      set_onboard_LED (255, 255, 255);
+      leds[0] = CRGB::White;
+      FastLED.show();
       delay(1000);
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, HIGH);
       digitalWrite(PIN_GREEN, HIGH);
-      set_onboard_LED (0, 0, 0);
+      leds[0] = CRGB::Black;
+      FastLED.show();
     };
 
     void onDisconnect(BLEServer* pServer) {
@@ -175,12 +177,14 @@ class MyServerCallbacks: public BLEServerCallbacks {
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, LOW);
       digitalWrite(PIN_GREEN, HIGH);
-      set_onboard_LED (255, 0, 0);
+      leds[0] = CRGB::Red;
+      FastLED.show();
       delay(1000);
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, HIGH);
       digitalWrite(PIN_GREEN, HIGH);
-      set_onboard_LED (0, 0, 0);
+      leds[0] = CRGB::Black;
+      FastLED.show();
     }
 };
 
@@ -199,7 +203,8 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
       digitalWrite(PIN_BLUE, HIGH);
       digitalWrite(PIN_RED, HIGH);
       digitalWrite(PIN_GREEN, LOW);
-      set_onboard_LED (0, 255, 0);
+      leds[0] = CRGB::Green;
+      FastLED.show();
 
       //start counting time
       chronometer_active = true;
@@ -235,7 +240,8 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           digitalWrite(PIN_BLUE, HIGH);
           digitalWrite(PIN_RED, HIGH);
           digitalWrite(PIN_GREEN, HIGH);
-          set_onboard_LED (0, 0, 0);
+          leds[0] = CRGB::Black;
+          FastLED.show();
           end_time = millis();
           unsigned long time_delta = end_time - start_time;
           Serial.print("Response time: ");
@@ -305,8 +311,10 @@ void setup() {
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);  // UART2
   Serial.println("UART Two-Way Chat started...");
 
-  strip.begin();           
-  strip.show(); 
+  /* GPIO setup */
+  //for on-board RGB LED
+  FastLED.addLeds<LED_TYPE, PIN_LED, COLOR_ORDER>(leds, 1);
+  FastLED.setBrightness(255);
 
   if (!bmp.begin(0x76)) {  // O endereço padrão do protocolo de comunicação I²C é o endereço 0x76 ou 0x77
     Serial.println("Falha ao detectar o BMP280! Verifique a conexão.");
@@ -354,7 +362,7 @@ void setup() {
 
   // Create BLE descriptors
   pDescr = new BLEDescriptor((uint16_t)0x2901);
-  pDescr->setValue("A very interesting variable receba");
+  pDescr->setValue("A very interesting variable indeed");
   pCharacteristic->addDescriptor(pDescr);
   pDescr_2 = new BLEDescriptor((uint16_t)0x2901);
   pDescr_2->setValue("description 2");
@@ -402,6 +410,16 @@ void setup() {
   digitalWrite(PIN_GREEN, HIGH);
 
   //digitalWrite(PIN_RESET, LOW);
+
+  Serial.println("turning on LED");
+  leds[0] = CRGB::HotPink;
+  FastLED.show();
+  delay(1000);
+  Serial.println("turning off LED");
+  leds[0] = CRGB::Black;
+  FastLED.show();
+
+
 
   Serial.println("setup completed");
 }
