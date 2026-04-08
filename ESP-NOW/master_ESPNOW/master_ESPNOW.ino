@@ -103,7 +103,7 @@ void send_ESP_NOW_message ()
 void setup() {
 
   Serial.begin(115200);
-  Serial.println("Device boot");
+  Serial.println("ESP-NOW master device boot...");
 
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);  // UART2
   Serial.println("UART Two-Way Chat started...");

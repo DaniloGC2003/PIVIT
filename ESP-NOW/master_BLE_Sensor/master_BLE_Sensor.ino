@@ -14,7 +14,7 @@
 #include <WiFi.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
-#include <Adafruit_NeoPixel.h>
+//#include <Adafruit_NeoPixel.h>
 #include <FastLED.h>
 #include "../utils/utils.h"
 
@@ -50,7 +50,8 @@ unsigned long end_time = 0;
 bool chronometer_active = false;
 
 //array used to send data to the app
-uint8_t byte_arr[5];
+uint8_t byte_arr[9];
+int byte_arr_size = sizeof(byte_arr) / sizeof(byte_arr[0]);
 
 //master's ID
 uint8_t master_id = MASTER_ID;
@@ -108,16 +109,20 @@ void sendMessageSerial(char direction, int code, int sender_id, unsigned long re
 }
 
 
-void sendMessageBLE(int sender_id, unsigned long time_delta)
+void sendMessageBLE(int sender_id, unsigned long time_delta, unsigned long pressure)
 {
   byte_arr[0] = sender_id;
   byte_arr[1] = (uint8_t)(time_delta & 0xFF);
   byte_arr[2] = (uint8_t)((time_delta >> 8) & 0xFF);
   byte_arr[3] = (uint8_t)((time_delta >> 16) & 0xFF);
   byte_arr[4] = (uint8_t)((time_delta >> 24) & 0xFF);
+  byte_arr[5] = (uint8_t)(pressure & 0xFF);
+  byte_arr[6] = (uint8_t)((pressure >> 8) & 0xFF);
+  byte_arr[7] = (uint8_t)((pressure >> 16) & 0xFF);
+  byte_arr[8] = (uint8_t)((pressure >> 24) & 0xFF);
 
   Serial.println("bytes to be sent to app: ");
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < byte_arr_size; i++) {
     Serial.println(byte_arr[i], DEC);  // Print each byte as decimal
   }
   
@@ -193,7 +198,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pChar) override { 
     String pChar2_value_string = pChar->getValue();                // This part is updated slightly from the video
     int pChar2_value_int = pChar2_value_string.toInt();
-    int maior = 0;
+    unsigned long maior = 0;
     Serial.println("pChar2: " + String(pChar2_value_int)); 
 
     if (pChar2_value_int == START_CHRONOMETER_MASTER)
@@ -218,6 +223,9 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
         if (operation_mode == 0) {
           anterior = atual;
             atual = bmp.readPressure();
+            Serial.println("DADOS: ");
+            Serial.println(atual/100.0f);
+            Serial.println(ref/100.0f);
             if(it == 0)
               ref = atual;
             if(atual > maior){
@@ -227,7 +235,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
             Serial.println("Bolsa vazia");
           }
         }
-        else if ((atual / 100.0F > (ref / 100.0F) + 5 && it > 0 && valor_anterior > atual) && operation_mode == 0 || digitalRead(BUTTON_PIN_CHRONOMETER) == LOW && operation_mode == 1)//if button was pressed while chronometer was active
+        if ((atual / 100.0F > (ref / 100.0F) + 3 && it > 0 && valor_anterior > atual) && operation_mode == 0 || digitalRead(BUTTON_PIN_CHRONOMETER) == LOW && operation_mode == 1)//if button was pressed while chronometer was active
         {
           Serial.println("BUTTON PRESSED. SUBMITTING RESPONSE TIME");
           
@@ -249,12 +257,13 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
           Serial.println(" milliseconds.");
           //disable chronometer
           chronometer_active = false;
-          //send BLE data
-          sendMessageBLE(master_id, time_delta);
+          unsigned long max_pressure = ((atual  - ref)/ 100.0F ) * 0.75 * 10;
           if (operation_mode == 0){
             Serial.println("O valor máximo de pressão é:");
-            Serial.println(((atual  - ref)/ 100.0F ) * 0.75 * 10);
+            Serial.println(max_pressure);
           }
+          //send BLE data
+          sendMessageBLE(master_id, time_delta, max_pressure);
 
         }
         delay(10);//10 ms delay to prevent watchdog from triggering.
@@ -306,7 +315,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
 
 void setup() {
   Serial.begin(115200);  // Serial monitor
-  Serial.println("Device boot...");
+  Serial.println("BLE master device boot...");
 
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);  // UART2
   Serial.println("UART Two-Way Chat started...");
@@ -402,14 +411,14 @@ void setup() {
   {
     pinMode(BUTTON_PIN_CHRONOMETER, INPUT_PULLUP);  
   }
-  // pinMode(PIN_RESET, OUTPUT);
+  pinMode(PIN_RESET, OUTPUT);
 
   //disable RGB LED
   digitalWrite(PIN_BLUE, HIGH);
   digitalWrite(PIN_RED, HIGH);
   digitalWrite(PIN_GREEN, HIGH);
 
-  //digitalWrite(PIN_RESET, LOW);
+  digitalWrite(PIN_RESET, LOW);
 
   Serial.println("turning on LED");
   leds[0] = CRGB::HotPink;
@@ -480,7 +489,7 @@ void loop() {
 
           if (payload_ESPNOW.code == UPLINK_REACTION_TIME)
           {
-            sendMessageBLE(payload_ESPNOW.sender_id, payload_ESPNOW.reaction_time);
+            sendMessageBLE(payload_ESPNOW.sender_id, payload_ESPNOW.reaction_time, 0);
           }
         }
       }

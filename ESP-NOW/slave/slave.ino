@@ -118,6 +118,7 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
 void setup() {
   // Set up Serial Monitor
   Serial.begin(115200);
+  Serial.println("Slave device boot...");
 
   /* GPIO setup */
   //for on-board RGB LED
