@@ -1,1 +1,1 @@
-- As interfaces BLE e ESP-NOW compartilham a mesma antena. Acredito que isso explica por que alguns pacotes enviados do slave para o mestre não sejam recebidos. Portanto, como melhoria, posso fazer com que o dispositivo mestre seja composto por 2 ESPs. Uma delas fica responsável pela comunicação BLE; a outra fica responsável pela comunicação ESP-NOW. As duas ESPs se comunicarão entre si via um protocolo de comunicação serial.
+- Create a "resend_attempts" variable for the ESP-NOW master

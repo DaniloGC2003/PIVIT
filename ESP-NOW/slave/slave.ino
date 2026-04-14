@@ -25,6 +25,8 @@ unsigned long start_time = 0;
 unsigned long end_time = 0;
 bool chronometer_active = false;
 
+//Used to send the ACK message
+bool ack_pending = false;
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 int ID_number = 0;
@@ -72,45 +74,8 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
       //start counting time
       chronometer_active = true;
       start_time = millis();
+      ack_pending = true;
 
-      while (chronometer_active == true)
-      {
-        if (digitalRead(BUTTON_PIN_CHRONOMETER) == LOW)//if button was pressed while chronometer was active
-        {
-          Serial.println("BUTTON PRESSED. SUBMITTING RESPONSE TIME");
-
-          //turn off LED
-          digitalWrite(PIN_BLUE, HIGH);
-          digitalWrite(PIN_RED, HIGH);
-          digitalWrite(PIN_GREEN, HIGH);
-          leds[0] = CRGB::Black;   // equivalent to (0,0,0)
-          FastLED.show();
-          end_time = millis();
-          unsigned long time_delta = end_time - start_time;
-          Serial.print("Response time: ");
-          Serial.print(time_delta);
-          Serial.println(" milliseconds.");
-          //disable chronometer
-          chronometer_active = false;
-
-          //Send response time to master device
-          esp_err_t result = ESP_FAIL;
-          payload_ESPNOW.code = UPLINK_REACTION_TIME;
-          payload_ESPNOW.reaction_time = time_delta;
-          print_ESPNOW_payload(payload_ESPNOW);
-          result = esp_now_send(broadcastAddress, 
-                                (uint8_t*) &payload_ESPNOW,
-                                sizeof(payload_ESPNOW)); 
-          if (result == ESP_OK) {
-            Serial.println("Sent");
-          } else {
-            Serial.println("Error on sending");
-          }
-          
-
-        }
-        delay(10);//10 ms delay to prevent watchdog from triggering.
-      }
     }
   }
 }
@@ -183,5 +148,58 @@ void setup() {
 }
  
 void loop() {
-  delay(1000);
+  if (ack_pending) {
+    //Send response time to master device
+    esp_err_t result = ESP_FAIL;
+    payload_ESPNOW.code = UPLINK_ACK;
+    payload_ESPNOW.reaction_time = 0;
+    print_ESPNOW_payload(payload_ESPNOW);
+    result = esp_now_send(broadcastAddress, 
+                          (uint8_t*) &payload_ESPNOW,
+                          sizeof(payload_ESPNOW)); 
+    if (result == ESP_OK) {
+      Serial.println("Sent ACK");
+      ack_pending = false;
+    } else {
+      Serial.println("Error on sending ACK");
+    }
+  }
+  if (chronometer_active == true)
+  {
+    if (digitalRead(BUTTON_PIN_CHRONOMETER) == LOW)//if button was pressed while chronometer was active
+    {
+      Serial.println("BUTTON PRESSED. SUBMITTING RESPONSE TIME");
+
+      //turn off LED
+      digitalWrite(PIN_BLUE, HIGH);
+      digitalWrite(PIN_RED, HIGH);
+      digitalWrite(PIN_GREEN, HIGH);
+      leds[0] = CRGB::Black;   // equivalent to (0,0,0)
+      FastLED.show();
+      end_time = millis();
+      unsigned long time_delta = end_time - start_time;
+      Serial.print("Response time: ");
+      Serial.print(time_delta);
+      Serial.println(" milliseconds.");
+      //disable chronometer
+      chronometer_active = false;
+
+      //Send response time to master device
+      esp_err_t result = ESP_FAIL;
+      payload_ESPNOW.code = UPLINK_REACTION_TIME;
+      payload_ESPNOW.reaction_time = time_delta;
+      print_ESPNOW_payload(payload_ESPNOW);
+      result = esp_now_send(broadcastAddress, 
+                            (uint8_t*) &payload_ESPNOW,
+                            sizeof(payload_ESPNOW)); 
+      if (result == ESP_OK) {
+        Serial.println("Sent reaction time");
+      } else {
+        Serial.println("Error on sending reaction time");
+      }
+      
+
+    }
+    delay(10);//10 ms delay to prevent watchdog from triggering.
+  }
 }

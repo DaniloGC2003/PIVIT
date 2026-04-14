@@ -1,4 +1,3 @@
-
 #include <esp_now.h>
 #include <WiFi.h>
 #include "../utils/utils.h"
@@ -6,11 +5,6 @@
 
 
 bool active_serial = true;
-
-//variables to calculate elapsed time
-unsigned long start_time = 0;
-unsigned long end_time = 0;
-bool chronometer_active = false;
 
 //array used to send data to the app
 uint8_t byte_arr[5];
@@ -23,7 +17,10 @@ uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 // payload for ESP-NOW messages
 struct_message payload_ESPNOW;
 
-
+//used to check if the ACK message was received
+bool ack_received = true;
+unsigned long start_chronometer_timestamp = 0;
+#define ACK_TIME_TOLERANCE 2000
 
 void sendMessageSerial(char direction, int code, int sender_id, unsigned long reaction_time) {
   uint8_t buffer[HEADER_LEN + 1 + 4 + 4 + 4];  // Total: 16 bytes
@@ -66,9 +63,9 @@ void print_ESPNOW_payload(struct_message payload)
 
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   if (status == ESP_NOW_SEND_SUCCESS) {
-    Serial.println("ACK received: Delivery successful");
+    Serial.println("Delivery successful");
   } else {
-    Serial.println("ACK not received: Delivery failed");
+    Serial.println("Delivery failed");
   }
 }
 
@@ -80,11 +77,17 @@ void OnDataRecv(const esp_now_recv_info_t * info, const uint8_t *incomingData, i
   Serial.println("received data from slave: ");
   print_ESPNOW_payload(received_payload);
 
+  if (received_payload.code != UPLINK_ACK){
+    //send serial data
+    Serial.println("Sending serial data to BLE master");
+    sendMessageSerial(received_payload.direction, received_payload.code, 
+                      received_payload.sender_id, received_payload.reaction_time);  
+  }
+  else {
+    Serial.println("ACK received");
+    ack_received = true;
+  }
 
-  //send serial data
-  Serial.println("Sending serial data to BLE master");
-  sendMessageSerial(received_payload.direction, received_payload.code, 
-                    received_payload.sender_id, received_payload.reaction_time);  
 }
 
 void send_ESP_NOW_message ()
@@ -171,19 +174,14 @@ void loop() {
   static uint8_t headerIndex = 0;
 
   while (Serial2.available() && active_serial) {
-    //Serial.print("bytes avalable before: ");
-    //Serial.println(Serial2.available());
     char c = Serial2.read();
-    //Serial.print("char read: ");
-    //Serial.print(c);
-    //Serial.println(int(c));
 
     // Match header bytes
     if (c == SERIAL_HEADER[headerIndex]) {
       headerIndex++;
-      Serial.println("char header match");
+      //Serial.println("char header match");
       if (headerIndex == HEADER_LEN) {
-        Serial.println("header match");
+        //Serial.println("header match");
         headerIndex = 0;
 
         // Wait until full payload is available
@@ -228,11 +226,19 @@ void loop() {
           { // Serial interface will only be reactivated once it receives an ESP_NOW uplink packet
             active_serial = false;// Stop ESP32 from listening to incoming serial data.
             send_ESP_NOW_message();
+            ack_received = false;
+            start_chronometer_timestamp = millis();
           }
         }
       }
     } else {
       headerIndex = 0;
     }
+  }
+    
+  if (ack_received == false && (millis() - start_chronometer_timestamp) >= ACK_TIME_TOLERANCE) { //Message most likely not received by slave
+  Serial.println("Chronometer activation message likely not received by slave. Trying again...");
+    send_ESP_NOW_message(); // resend
+    start_chronometer_timestamp = millis();
   }
 }

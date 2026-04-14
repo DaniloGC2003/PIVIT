@@ -420,13 +420,29 @@ void setup() {
 
   digitalWrite(PIN_RESET, LOW);
 
-  Serial.println("turning on LED");
-  leds[0] = CRGB::HotPink;
+
+  if (operation_mode == 0){ //pressure pad detected
+    Serial.println("Pressure pad detected. Turning on LED");
+    leds[0] = CRGB::Yellow;
+    digitalWrite(PIN_BLUE, HIGH);
+    digitalWrite(PIN_RED, LOW);
+    digitalWrite(PIN_GREEN, LOW);
+  }
+  else {
+    Serial.println("Pressure pad NOT detected. Turning on LED"); //pressure pad NOT detected
+    leds[0] = CRGB::Blue;
+    digitalWrite(PIN_BLUE, LOW);
+    digitalWrite(PIN_RED, HIGH);
+    digitalWrite(PIN_GREEN, HIGH);
+  }
   FastLED.show();
   delay(1000);
   Serial.println("turning off LED");
   leds[0] = CRGB::Black;
   FastLED.show();
+  digitalWrite(PIN_BLUE, HIGH);
+  digitalWrite(PIN_RED, HIGH);
+  digitalWrite(PIN_GREEN, HIGH);
 
 
 

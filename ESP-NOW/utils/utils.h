@@ -54,6 +54,7 @@ typedef struct struct_message
 #define START_CHRONOMETER_SLAVE6 17
 #define START_CHRONOMETER_SLAVE7 18
 #define RESET_ESP_NOW_MASTER 19
+#define UPLINK_ACK 20
 
 // serial data headers
 #define SERIAL_HEADER "ESP"
