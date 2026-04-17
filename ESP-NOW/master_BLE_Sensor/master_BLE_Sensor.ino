@@ -61,6 +61,9 @@ struct_message payload_ESPNOW;
 
 bool operation_mode = 0; //pressure pad = 0; push button = 1
 
+// used for pressure pad logic
+bool pressure_rising = false;
+
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
@@ -222,22 +225,38 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
       {
         if (operation_mode == 0) {
           anterior = atual;
-            atual = bmp.readPressure();
-            Serial.println("DADOS: ");
-            Serial.println(atual/100.0f);
-            Serial.println(ref/100.0f);
-            if(it == 0)
-              ref = atual;
-            if(atual > maior){
-              maior = atual;
+          atual = bmp.readPressure();
+          Serial.println("DADOS: ");
+          Serial.println(atual/100.0f);
+          Serial.println(ref/100.0f);
+          //Serial.println(valor_anterior/100.0f);
+          if (atual < valor_anterior && !pressure_rising) {
+            ref = atual;
+          }
+          if(it == 0)
+            ref = atual;
+          if(atual > maior){
+            maior = atual;
           }
           if (atual / 100.0F < 900){
             Serial.println("Bolsa vazia");
           }
         }
-        if ((atual / 100.0F > (ref / 100.0F) + 3 && it > 0 && valor_anterior > atual) && operation_mode == 0 || digitalRead(BUTTON_PIN_CHRONOMETER) == LOW && operation_mode == 1)//if button was pressed while chronometer was active
+        if (atual / 100.0F > (ref / 100.0F) + 1){
+          Serial.println("GREATER");
+          pressure_rising = true;
+        }
+        if ((atual / 100.0F > (ref / 100.0F) + 3 &&
+             it > 0 && 
+             valor_anterior > atual) && //ensures the greatest pressure value is registered
+             operation_mode == 0 &&
+             pressure_rising
+             ||
+             digitalRead(BUTTON_PIN_CHRONOMETER) == LOW &&
+             operation_mode == 1)//if button was pressed while chronometer was active
         {
           Serial.println("BUTTON PRESSED. SUBMITTING RESPONSE TIME");
+          pressure_rising = false;
           
           if (operation_mode == 0){
             Serial.println(maior / 100.0F);
