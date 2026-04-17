@@ -226,10 +226,10 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
         if (operation_mode == 0) {
           anterior = atual;
           atual = bmp.readPressure();
-          Serial.println("DADOS: ");
+          /*Serial.println("DADOS: ");
           Serial.println(atual/100.0f);
           Serial.println(ref/100.0f);
-          //Serial.println(valor_anterior/100.0f);
+          Serial.println(valor_anterior/100.0f);*/
           if (atual < valor_anterior && !pressure_rising) {
             ref = atual;
           }
@@ -242,8 +242,7 @@ class CharacteristicCallBack: public BLECharacteristicCallbacks {
             Serial.println("Bolsa vazia");
           }
         }
-        if (atual / 100.0F > (ref / 100.0F) + 1){
-          Serial.println("GREATER");
+        if (atual / 100.0F > (ref / 100.0F) + 1){ //user began contact with pressure pad
           pressure_rising = true;
         }
         if ((atual / 100.0F > (ref / 100.0F) + 3 &&
