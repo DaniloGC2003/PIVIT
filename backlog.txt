@@ -1,1 +1,1 @@
-- Create a "resend_attempts" variable for the ESP-NOW master
+- Add pressure data to the graph on the app

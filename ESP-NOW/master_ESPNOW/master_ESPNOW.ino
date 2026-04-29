@@ -20,7 +20,9 @@ struct_message payload_ESPNOW;
 //used to check if the ACK message was received
 bool ack_received = true;
 unsigned long start_chronometer_timestamp = 0;
+short resend_attempts = 0;
 #define ACK_TIME_TOLERANCE 2000
+#define MAX_RESEND_ATTEMPTS 3
 
 void sendMessageSerial(char direction, int code, int sender_id, unsigned long reaction_time) {
   uint8_t buffer[HEADER_LEN + 1 + 4 + 4 + 4];  // Total: 16 bytes
@@ -237,8 +239,15 @@ void loop() {
   }
     
   if (ack_received == false && (millis() - start_chronometer_timestamp) >= ACK_TIME_TOLERANCE) { //Message most likely not received by slave
-  Serial.println("Chronometer activation message likely not received by slave. Trying again...");
+    resend_attempts++;
+    Serial.println("Chronometer activation message likely not received by slave. Trying again...");
     send_ESP_NOW_message(); // resend
     start_chronometer_timestamp = millis();
+    if (resend_attempts == MAX_RESEND_ATTEMPTS) { //stop trying to send the message
+      ack_received = true;
+      String max_attempts_message = "MAX_RESEND_ATTEMPTS reached. Please check slave device ";
+      max_attempts_message += payload_ESPNOW.code - 11;
+      Serial.println(max_attempts_message); //sending the whole message in one string ensures it isn't interrupted by the message sending thread
+    }
   }
 }
