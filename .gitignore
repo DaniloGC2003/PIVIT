@@ -1,6 +1,7 @@
 # KiCad backup files
 *.kicad_sch-bak
 *.kicad_pcb-bak
+/kicad/reaction_time_slave/reaction_time_slave_backups
 
 # Backup folders
 *-backups/
