@@ -1,1 +1,1 @@
-- 
+- Implementar interface para sensor de pressão nos dispositivos slave.
